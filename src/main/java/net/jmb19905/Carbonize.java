@@ -53,7 +53,7 @@ public class Carbonize implements ModInitializer {
 			.sounds(BlockSoundGroup.WOOD)
 			.burnable());
 	public static final Block CHARCOAL_STAIRS = new FlammableFallingStairsBlock(CHARCOAL_PLANKS.getDefaultState(), FabricBlockSettings.copy(CHARCOAL_PLANKS));
-	//public static final Block CHARCOAL_PLANKS_SLAB = new SlabBlock(CHARCOAL_PLANKS.getDefaultState(), FabricBlockSettings.copy(CHARCOAL_PLANKS));
+	public static final Block CHARCOAL_SLAB = new FlammableFallingSlabBlock(FabricBlockSettings.copy(CHARCOAL_PLANKS));
 
 	public static final Block ASH_LAYER = new AshBlock(FabricBlockSettings.create()
 			.mapColor(MapColor.GRAY)
@@ -74,6 +74,7 @@ public class Carbonize implements ModInitializer {
 	public static final BlockItem CHARCOAL_LOG_ITEM = new BlockItem(CHARCOAL_LOG, new FabricItemSettings());
 	public static final BlockItem CHARCOAL_PLANKS_ITEM = new BlockItem(CHARCOAL_PLANKS, new FabricItemSettings());
 	public static final BlockItem CHARCOAL_STAIRS_ITEM = new BlockItem(CHARCOAL_STAIRS, new FabricItemSettings());
+	public static final BlockItem CHARCOAL_SLAB_ITEM = new BlockItem(CHARCOAL_SLAB, new FabricItemSettings());
 	public static final BlockItem ASH_LAYER_ITEM = new BlockItem(ASH_LAYER, new FabricItemSettings());
 	public static final BlockItem ASH_BLOCK_ITEM = new BlockItem(ASH_BLOCK, new FabricItemSettings());
 	public static final BlockItem CHARCOAL_BLOCK_ITEM = new BlockItem(CHARCOAL_BLOCK, new FabricItemSettings());
@@ -95,6 +96,7 @@ public class Carbonize implements ModInitializer {
 		Registry.register(Registries.BLOCK, new Identifier(MOD_ID, "charcoal_log"), CHARCOAL_LOG);
 		Registry.register(Registries.BLOCK, new Identifier(MOD_ID, "charcoal_planks"), CHARCOAL_PLANKS);
 		Registry.register(Registries.BLOCK, new Identifier(MOD_ID, "charcoal_stairs"), CHARCOAL_STAIRS);
+		Registry.register(Registries.BLOCK, new Identifier(MOD_ID, "charcoal_slab"), CHARCOAL_SLAB);
 		Registry.register(Registries.BLOCK, new Identifier(MOD_ID, "ash_layer"), ASH_LAYER);
 		Registry.register(Registries.BLOCK, new Identifier(MOD_ID, "ash_block"), ASH_BLOCK);
 		Registry.register(Registries.BLOCK, new Identifier(MOD_ID, "charring_wood"), CHARRING_WOOD);
@@ -104,6 +106,7 @@ public class Carbonize implements ModInitializer {
 		Registry.register(Registries.ITEM, new Identifier(MOD_ID, "charcoal_log"), CHARCOAL_LOG_ITEM);
 		Registry.register(Registries.ITEM, new Identifier(MOD_ID, "charcoal_planks"), CHARCOAL_PLANKS_ITEM);
 		Registry.register(Registries.ITEM, new Identifier(MOD_ID, "charcoal_stairs"), CHARCOAL_STAIRS_ITEM);
+		Registry.register(Registries.ITEM, new Identifier(MOD_ID, "charcoal_slab"), CHARCOAL_SLAB_ITEM);
 		Registry.register(Registries.ITEM, new Identifier(MOD_ID, "ash_layer"), ASH_LAYER_ITEM);
 		Registry.register(Registries.ITEM, new Identifier(MOD_ID, "ash_block"), ASH_BLOCK_ITEM);
 		Registry.register(Registries.ITEM, new Identifier(MOD_ID, "charcoal_block"), CHARCOAL_BLOCK_ITEM);
@@ -115,6 +118,7 @@ public class Carbonize implements ModInitializer {
 
 		FlammableBlockRegistry.getDefaultInstance().add(CHARCOAL_PLANKS, 15, 30);
 		FlammableBlockRegistry.getDefaultInstance().add(CHARCOAL_STAIRS, 15, 30);
+		FlammableBlockRegistry.getDefaultInstance().add(CHARCOAL_SLAB, 15, 30);
 		FlammableBlockRegistry.getDefaultInstance().add(CHARCOAL_BLOCK, 15, 30);
 		FlammableBlockRegistry.getDefaultInstance().add(CHARCOAL_LOG, 15, 30);
 		FlammableBlockRegistry.getDefaultInstance().add(CHARRING_WOOD, 15, 30);
@@ -148,11 +152,13 @@ public class Carbonize implements ModInitializer {
 		FuelRegistry.INSTANCE.add(CHARCOAL_LOG, 1600 * 4);
 		FuelRegistry.INSTANCE.add(CHARCOAL_PLANKS, 1600 * 4);
 		FuelRegistry.INSTANCE.add(CHARCOAL_STAIRS, 1600 * 3);
+		FuelRegistry.INSTANCE.add(CHARCOAL_SLAB, 1600 * 2);
 
 		ItemGroupEvents.modifyEntriesEvent(ItemGroups.BUILDING_BLOCKS).register(content -> {
 			content.add(CHARCOAL_LOG_ITEM);
 			content.add(CHARCOAL_PLANKS_ITEM);
 			content.add(CHARCOAL_STAIRS_ITEM);
+			content.add(CHARCOAL_SLAB_ITEM);
 			content.add(CHARCOAL_BLOCK_ITEM);
 			content.add(ASH_LAYER_ITEM);
 			content.add(ASH_BLOCK_ITEM);
@@ -169,10 +175,7 @@ public class Carbonize implements ModInitializer {
 					int i = CharringWoodBlock.checkValid(world, pos, hitResult.getSide());
 					if (i >= 8) {
 						world.setBlockState(pos, Carbonize.CHARRING_WOOD.getDefaultState());
-						world.getBlockEntity(pos, CHARRING_WOOD_TYPE).ifPresentOrElse(blockEntity -> {
-							Carbonize.LOGGER.info("Logs: " + i);
-							blockEntity.setLogCount(i);
-						}, () -> {});
+						world.getBlockEntity(pos, CHARRING_WOOD_TYPE).ifPresent(blockEntity -> blockEntity.setLogCount(i));
 						return ActionResult.CONSUME;
 					}
 				}

@@ -31,6 +31,7 @@ public class CarbonizeLootDataGen extends FabricBlockLootTableProvider {
         this.addDrop(Carbonize.CHARCOAL_LOG, block -> this.drops(block, Items.CHARCOAL, ConstantLootNumberProvider.create(4)));
         this.addDrop(Carbonize.CHARCOAL_PLANKS, block -> this.drops(block, Items.CHARCOAL, ConstantLootNumberProvider.create(4)));
         this.addDrop(Carbonize.CHARCOAL_STAIRS, block -> this.drops(block, Items.CHARCOAL, ConstantLootNumberProvider.create(3)));
+        this.addDrop(Carbonize.CHARCOAL_SLAB, block -> this.drops(block, Items.CHARCOAL, ConstantLootNumberProvider.create(2)));
         this.addDrop(Carbonize.CHARCOAL_BLOCK);
         this.excludeFromStrictValidation(Carbonize.CHARRING_WOOD);
     }

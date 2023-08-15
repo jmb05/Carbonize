@@ -18,7 +18,7 @@ import java.util.Map;
 public class CharringWoodBlockEntity extends BlockEntity {
 
     private static final Map<Direction, BooleanProperty> DIRECTION_PROPERTIES = ConnectingBlock.FACING_PROPERTIES.entrySet().stream().filter(entry -> entry.getKey() != Direction.DOWN).collect(Util.toMap());
-    public static final int SINGLE_BURN_TIME = 800;
+    public static final int SINGLE_BURN_TIME = 200;
     private int burnTime = 0;
     private int maxBurnTime = SINGLE_BURN_TIME;
 
@@ -56,8 +56,8 @@ public class CharringWoodBlockEntity extends BlockEntity {
         }
     }
 
-    public void setLogCount(int maxBurnTime) {
-        this.maxBurnTime = maxBurnTime * SINGLE_BURN_TIME;
+    public void setLogCount(int logCount) {
+        this.maxBurnTime = (int) (logCount * SINGLE_BURN_TIME * 0.8);
     }
 
     @Override

@@ -1,0 +1,13 @@
+{
+  "variants": {
+    "type=bottom": {
+      "model": "carbonize:block/charcoal_slab"
+    },
+    "type=double": {
+      "model": "carbonize:block/charcoal_planks"
+    },
+    "type=top": {
+      "model": "carbonize:block/charcoal_slab_top"
+    }
+  }
+}

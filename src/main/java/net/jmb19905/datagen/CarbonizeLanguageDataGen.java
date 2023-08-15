@@ -13,7 +13,8 @@ public class CarbonizeLanguageDataGen extends FabricLanguageProvider {
     @Override
     public void generateTranslations(TranslationBuilder translationBuilder) {
         translationBuilder.add(Carbonize.CHARCOAL_PLANKS, "Charcoal Planks");
-        translationBuilder.add(Carbonize.CHARCOAL_STAIRS, "Charcoal Planks Stairs");
+        translationBuilder.add(Carbonize.CHARCOAL_STAIRS, "Charcoal Stairs");
+        translationBuilder.add(Carbonize.CHARCOAL_SLAB, "Charcoal Slab");
         translationBuilder.add(Carbonize.CHARCOAL_LOG, "Charcoal Log");
         translationBuilder.add(Carbonize.CHARCOAL_BLOCK, "Charcoal Block");
         translationBuilder.add(Carbonize.ASH_LAYER, "Ash Layer");
