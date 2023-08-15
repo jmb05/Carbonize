@@ -1,0 +1,14 @@
+// 1.20.1	2023-08-14T19:53:00.73997348	Carbonize/Model Definitions
+e51346f0271411412d6ba604b3a7173ce9fdb0fb assets/carbonize/blockstates/charcoal_planks.json
+6a19283bf9baaa47ee0abc8066dd9cfa372378d7 assets/carbonize/models/block/charcoal_log.json
+f42e707f68e6a95958c20215502f8b9508875417 assets/carbonize/models/item/charcoal_log.json
+084cec3340eee9475ca8a06fbf87c73eb72647ac assets/carbonize/models/item/charcoal_block.json
+3f6b89e68cd5f9b9f02e3c5a532aed56af82f286 assets/carbonize/blockstates/charring_wood.json
+a5bcf04bfe3b4c8a3dc3f528d6aa9b06da390efb assets/carbonize/models/block/charcoal_block.json
+e8ab8711517670aa6cdef101ccc76727829d394d assets/carbonize/models/item/ash.json
+6c992820c532054d84c660d869831f31d7a64429 assets/carbonize/blockstates/charcoal_log.json
+5bd263e8d3ea490339a549d002f12bd9b0380598 assets/carbonize/blockstates/charcoal_block.json
+69f99fb0ac4c160ccda9de2af7e07c5efeca093f assets/carbonize/models/block/charring_wood.json
+58e4219567a1a948548cffb6cef546c1bc280c5d assets/carbonize/models/block/charcoal_planks.json
+a62d810e4472a42c31259ee62ac5d6a34768e038 assets/carbonize/models/block/charcoal_log_horizontal.json
+4fb96c15422fc8a94f365d414c5e81cc64b5b8b8 assets/carbonize/models/item/charcoal_planks.json

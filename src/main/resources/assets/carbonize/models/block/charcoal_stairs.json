@@ -1,0 +1,8 @@
+{
+  "parent": "minecraft:block/stairs",
+  "textures": {
+    "bottom": "carbonize:block/charcoal_planks",
+    "side": "carbonize:block/charcoal_planks",
+    "top": "carbonize:block/charcoal_planks"
+  }
+}

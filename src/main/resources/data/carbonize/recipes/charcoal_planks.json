@@ -1,0 +1,5 @@
+{
+  "type": "carbonize:burn",
+  "input": "minecraft:planks",
+  "output": "carbonize:charcoal_planks"
+}

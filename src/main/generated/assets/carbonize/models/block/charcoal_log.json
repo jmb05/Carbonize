@@ -1,0 +1,7 @@
+{
+  "parent": "minecraft:block/cube_column",
+  "textures": {
+    "end": "carbonize:block/charcoal_log_top",
+    "side": "carbonize:block/charcoal_log"
+  }
+}

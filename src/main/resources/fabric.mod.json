@@ -1,0 +1,44 @@
+{
+	"schemaVersion": 1,
+	"id": "carbonize",
+	"version": "${version}",
+	"name": "Carbonize",
+	"description": "A Minecraft Fabric mod all about burning organic material",
+	"authors": [
+		"jmb19905"
+	],
+	"contact": {
+		"sources": "https://github.com/jmb05/Carbonize"
+	},
+	"license": "CC0-1.0",
+	"icon": "assets/carbonize/icon.png",
+	"environment": "*",
+	"entrypoints": {
+		"main": [
+          "net.jmb19905.Carbonize"
+		],
+		"client": [
+			"net.jmb19905.CarbonizeClient"
+		],
+		"fabric-datagen": [
+          "net.jmb19905.datagen.CarbonizeDataGenerator"
+		]
+	},
+	"mixins": [
+		"carbonize.mixins.json",
+		{
+			"config": "carbonize.client.mixins.json",
+			"environment": "client"
+		}
+	],
+	"depends": {
+		"fabricloader": ">=0.14.21",
+		"minecraft": "~1.20.1",
+		"java": ">=17",
+		"fabric-api": "*",
+		"owo-lib": "0.11.1+1.20"
+	},
+	"suggests": {
+		"modmenu": "*"
+	}
+}

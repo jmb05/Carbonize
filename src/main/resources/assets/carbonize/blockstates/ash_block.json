@@ -1,0 +1,7 @@
+{
+  "variants": {
+    "": {
+      "model": "carbonize:block/ash_block"
+    }
+  }
+}
