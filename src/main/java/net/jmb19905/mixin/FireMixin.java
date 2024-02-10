@@ -81,14 +81,14 @@ public abstract class FireMixin {
                         }
                         world.setBlockState(pos, newState);
                         return true;
-                    } else if (randomVal > 0.3f) {
+                    } else if (randomVal > 0.3f && Carbonize.CONFIG.createAsh()) {
                         world.setBlockState(pos, Carbonize.ASH_LAYER.getDefaultState().with(AshBlock.LAYERS, getAshLayerCount(random, state)));
                         return true;
                     }
                 }
             }
         }
-        if (random.nextFloat() > 0.3f) {
+        if (random.nextFloat() > 0.3f && Carbonize.CONFIG.createAsh()) {
             world.setBlockState(pos, Carbonize.ASH_LAYER.getDefaultState().with(AshBlock.LAYERS, getAshLayerCount(random, state)));
             return true;
         }

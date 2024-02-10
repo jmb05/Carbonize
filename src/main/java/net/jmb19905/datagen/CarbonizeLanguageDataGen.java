@@ -20,5 +20,11 @@ public class CarbonizeLanguageDataGen extends FabricLanguageProvider {
         translationBuilder.add(Carbonize.ASH_LAYER, "Ash Layer");
         translationBuilder.add(Carbonize.ASH_BLOCK, "Ash Block");
         translationBuilder.add(Carbonize.ASH, "Ash");
+
+        translationBuilder.add("text.config.carbonize.option.moreBurnableBlocks", "More flammable blocks");
+        translationBuilder.add("text.config.carbonize.option.burnableContainers", "Flammable containers");
+        translationBuilder.add("text.config.carbonize.option.charcoalPile", "Charcoal pile");
+        translationBuilder.add("text.config.carbonize.option.burnCrafting", "Block conversion by burning");
+        translationBuilder.add("text.config.carbonize.option.increasedFireSpreadRange", "Increased fire spread range");
     }
 }

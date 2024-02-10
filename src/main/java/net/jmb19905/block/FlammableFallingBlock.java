@@ -5,7 +5,9 @@ import net.minecraft.block.BlockState;
 import net.minecraft.block.Blocks;
 import net.minecraft.block.ConnectingBlock;
 import net.minecraft.block.FallingBlock;
+import net.minecraft.entity.Entity;
 import net.minecraft.entity.FallingBlockEntity;
+import net.minecraft.entity.damage.DamageSource;
 import net.minecraft.registry.tag.BlockTags;
 import net.minecraft.server.world.ServerWorld;
 import net.minecraft.util.math.BlockPos;
@@ -42,6 +44,11 @@ public class FlammableFallingBlock extends FallingBlock {
     }
 
     @Override
+    protected void configureFallingBlockEntity(FallingBlockEntity entity) {
+        entity.setHurtEntities(1.0f, 10);
+    }
+
+    @Override
     public void onLanding(World world, BlockPos pos, BlockState fallingBlockState, BlockState currentStateInPos, FallingBlockEntity fallingBlockEntity) {
         if (fallingBlockEntity.isOnFire()) {
             world.setBlockState(pos.up(), Blocks.FIRE.getDefaultState());
@@ -53,5 +60,13 @@ public class FlammableFallingBlock extends FallingBlock {
         if (fallingBlockEntity.isOnFire()) {
             world.setBlockState(pos.up(), Blocks.FIRE.getDefaultState());
         }
+    }
+
+    @Override
+    public DamageSource getDamageSource(Entity attacker) {
+        if (attacker instanceof FallingBlockEntity entity && entity.isOnFire()) {
+            return attacker.getDamageSources().onFire();
+        }
+        return super.getDamageSource(attacker);
     }
 }

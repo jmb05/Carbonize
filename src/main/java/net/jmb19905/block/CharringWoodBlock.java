@@ -51,21 +51,29 @@ public class CharringWoodBlock extends BlockWithEntity {
         double y;
         double x;
         int i;
-            if (random.nextInt(24) == 0) {
-                world.playSound((double) pos.getX() + 0.5, (double) pos.getY() + 0.5, (double) pos.getZ() + 0.5, SoundEvents.BLOCK_FIRE_AMBIENT, SoundCategory.BLOCKS, 1.0f + random.nextFloat(), random.nextFloat() * 0.7f + 0.3f, false);
-            }
-            for (int i2 = 0; i2 < 3; ++i2) {
-                x = (double) pos.getX() + random.nextDouble();
-                y = (double) pos.getY() + random.nextDouble() * 0.5 + 0.5;
-                z = (double) pos.getZ() + random.nextDouble();
+        if (random.nextInt(24) == 0) {
+            world.playSound((double) pos.getX() + 0.5, (double) pos.getY() + 0.5, (double) pos.getZ() + 0.5, SoundEvents.BLOCK_FIRE_AMBIENT, SoundCategory.BLOCKS, 1.0f + random.nextFloat(), random.nextFloat() * 0.7f + 0.3f, false);
+        }
+        for (int i2 = 0; i2 < 3; ++i2) {
+            x = (double) pos.getX() + random.nextDouble();
+            y = (double) pos.getY() + random.nextDouble() * 0.5 + 0.5;
+            z = (double) pos.getZ() + random.nextDouble();
+            if (random.nextFloat() > 0.95f) {
+                world.addParticle(ParticleTypes.CAMPFIRE_COSY_SMOKE, x, y + 1, z, 0.0, 0.07, 0.0);
+            } else {
                 world.addParticle(ParticleTypes.LARGE_SMOKE, x, y, z, 0.0, 0.0, 0.0);
             }
+        }
         if (world.getBlockState(pos.up()).isAir()) return;
         for (i = 0; i < 2; ++i) {
             x = (double)pos.getX() + random.nextDouble();
             y = (double)(pos.getY() + 1) - random.nextDouble() * (double)0.1f;
             z = (double)pos.getZ() + random.nextDouble();
-            world.addParticle(ParticleTypes.LARGE_SMOKE, x, y, z, 0.0, 0.0, 0.0);
+            if (random.nextFloat() > 0.95f) {
+                world.addParticle(ParticleTypes.CAMPFIRE_COSY_SMOKE, x, y + 1, z, 0.0, 0.07, 0.0);
+            } else {
+                world.addParticle(ParticleTypes.LARGE_SMOKE, x, y, z, 0.0, 0.0, 0.0);
+            }
         }
     }
 

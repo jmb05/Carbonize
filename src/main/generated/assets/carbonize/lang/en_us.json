@@ -4,6 +4,12 @@
   "block.carbonize.charcoal_block": "Charcoal Block",
   "block.carbonize.charcoal_log": "Charcoal Log",
   "block.carbonize.charcoal_planks": "Charcoal Planks",
-  "block.carbonize.charcoal_stairs": "Charcoal Planks Stairs",
-  "item.carbonize.ash": "Ash"
+  "block.carbonize.charcoal_slab": "Charcoal Slab",
+  "block.carbonize.charcoal_stairs": "Charcoal Stairs",
+  "item.carbonize.ash": "Ash",
+  "text.config.carbonize.option.burnCrafting": "Block conversion by burning",
+  "text.config.carbonize.option.burnableContainers": "Flammable containers",
+  "text.config.carbonize.option.charcoalPile": "Charcoal pile",
+  "text.config.carbonize.option.increasedFireSpreadRange": "Increased fire spread range",
+  "text.config.carbonize.option.moreBurnableBlocks": "More flammable blocks"
 }

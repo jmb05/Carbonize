@@ -1,12 +1,13 @@
 package net.jmb19905.block;
 
-import net.minecraft.block.Block;
-import net.minecraft.block.BlockState;
-import net.minecraft.block.FallingBlock;
-import net.minecraft.block.ShapeContext;
+import net.minecraft.block.*;
 import net.minecraft.entity.FallingBlockEntity;
 import net.minecraft.entity.ai.pathing.NavigationType;
 import net.minecraft.item.ItemPlacementContext;
+import net.minecraft.registry.Registries;
+import net.minecraft.registry.entry.RegistryEntry;
+import net.minecraft.registry.tag.BiomeTags;
+import net.minecraft.registry.tag.BlockTags;
 import net.minecraft.server.world.ServerWorld;
 import net.minecraft.state.StateManager;
 import net.minecraft.state.property.IntProperty;
@@ -21,9 +22,11 @@ import net.minecraft.world.World;
 import net.minecraft.world.biome.Biome;
 import org.jetbrains.annotations.Nullable;
 
+@SuppressWarnings("deprecation")
 public class AshBlock extends FallingBlock {
 
     public static final int MAX_LAYERS = 8;
+    public static final float RAIN_FERTILIZE_CHANCE = 0.1f;
     public static final IntProperty LAYERS = Properties.LAYERS;
     protected static final VoxelShape[] LAYERS_TO_SHAPE = new VoxelShape[]{VoxelShapes.empty(), Block.createCuboidShape(0.0, 0.0, 0.0, 16.0, 2.0, 16.0), Block.createCuboidShape(0.0, 0.0, 0.0, 16.0, 4.0, 16.0), Block.createCuboidShape(0.0, 0.0, 0.0, 16.0, 6.0, 16.0), Block.createCuboidShape(0.0, 0.0, 0.0, 16.0, 8.0, 16.0), Block.createCuboidShape(0.0, 0.0, 0.0, 16.0, 10.0, 16.0), Block.createCuboidShape(0.0, 0.0, 0.0, 16.0, 12.0, 16.0), Block.createCuboidShape(0.0, 0.0, 0.0, 16.0, 14.0, 16.0), Block.createCuboidShape(0.0, 0.0, 0.0, 16.0, 16.0, 16.0)};
 
@@ -114,15 +117,24 @@ public class AshBlock extends FallingBlock {
         var state = world.getBlockState(pos);
         var fallingLayers = fallingBlockEntity.getBlockState().get(LAYERS);
         if (state.isOf(this)) {
-                int layers = state.get(LAYERS) + fallingLayers;
-                int more = Math.max(layers - MAX_LAYERS, 0);
+            int layers = state.get(LAYERS) + fallingLayers;
+            int more = Math.max(layers - MAX_LAYERS, 0);
+            System.out.println("Layers: " + (state.get(LAYERS)) + " + " + fallingLayers + " = " + layers + " (More: " + more + ")");
             if (state.get(LAYERS) < MAX_LAYERS) {
+                System.out.println("Added to block: " + pos);
                 world.setBlockState(pos, getDefaultState().with(LAYERS, Math.min(layers, 8)));
+                if (more > 0) {
+                    System.out.println("Added new block: " + pos.up());
+                    world.setBlockState(pos.up(), getDefaultState().with(LAYERS, Math.min(more, 8)));
+                }
             } else if (state.get(LAYERS) == MAX_LAYERS) {
-                world.setBlockState(pos.up(), getDefaultState().with(LAYERS, Math.min(layers, 8)));
-            }
-            if (more > 0) {
-                world.setBlockState(pos.up(), getDefaultState().with(LAYERS, Math.min(more, 8)));
+                System.out.println("Added new block: " + pos.up());
+                BlockState upState = world.getBlockState(pos.up());
+                if (upState.isOf(this)) {
+                    world.setBlockState(pos.up(), getDefaultState().with(LAYERS, Math.min(upState.get(LAYERS) + fallingLayers, 8)));
+                } else {
+                    world.setBlockState(pos.up(), getDefaultState().with(LAYERS, Math.min(fallingLayers, 8)));
+                }
             }
         }
     }
@@ -142,6 +154,74 @@ public class AshBlock extends FallingBlock {
             } else {
                 world.removeBlock(pos, false);
             }
+            //if (random.nextFloat() < RAIN_FERTILIZE_CHANCE) {
+                //fertilizeGround(world, pos);
+            //}
         }
     }
+
+    private void fertilizeGround(World world, BlockPos pos) {
+        Direction direction = Direction.random(world.random);
+        BlockPos relPos = pos.offset(direction);
+        BlockState blockState = world.getBlockState(pos);
+        boolean bl = blockState.isSideSolidFullSquare(world, pos, direction);
+        if (bl && useOnGround(world, relPos, direction)) {
+            if (!world.isClient) {
+                world.syncWorldEvent(1505, relPos, 0);
+            }
+        }
+    }
+
+    public static boolean useOnGround(World world, BlockPos blockPos, @Nullable Direction facing) {
+        if (world.getBlockState(blockPos).isOf(Blocks.WATER) && world.getFluidState(blockPos).getLevel() == 8) {
+            if (world instanceof ServerWorld) {
+                Random random = world.getRandom();
+
+                label78:
+                for (int i = 0; i < 128; ++i) {
+                    BlockPos blockPos2 = blockPos;
+                    BlockState blockState = Blocks.SEAGRASS.getDefaultState();
+
+                    for (int j = 0; j < i / 16; ++j) {
+                        blockPos2 = blockPos2.add(random.nextInt(3) - 1, (random.nextInt(3) - 1) * random.nextInt(3) / 2, random.nextInt(3) - 1);
+                        if (world.getBlockState(blockPos2).isFullCube(world, blockPos2)) {
+                            continue label78;
+                        }
+                    }
+
+                    RegistryEntry<Biome> registryEntry = world.getBiome(blockPos2);
+                    if (registryEntry.isIn(BiomeTags.PRODUCES_CORALS_FROM_BONEMEAL)) {
+                        if (i == 0 && facing != null && facing.getAxis().isHorizontal()) {
+                            blockState = Registries.BLOCK.getEntryList(BlockTags.WALL_CORALS).flatMap((blocks) -> blocks.getRandom(world.random)).map((blockEntry) -> blockEntry.value().getDefaultState()).orElse(blockState);
+                            if (blockState.contains(DeadCoralWallFanBlock.FACING)) {
+                                blockState = blockState.with(DeadCoralWallFanBlock.FACING, facing);
+                            }
+                        } else if (random.nextInt(4) == 0) {
+                            blockState = Registries.BLOCK.getEntryList(BlockTags.UNDERWATER_BONEMEALS).flatMap((blocks) -> blocks.getRandom(world.random)).map((blockEntry) -> blockEntry.value().getDefaultState()).orElse(blockState);
+                        }
+                    }
+
+                    if (blockState.isIn(BlockTags.WALL_CORALS, (state) -> state.contains(DeadCoralWallFanBlock.FACING))) {
+                        for (int k = 0; !blockState.canPlaceAt(world, blockPos2) && k < 4; ++k) {
+                            blockState = blockState.with(DeadCoralWallFanBlock.FACING, Direction.Type.HORIZONTAL.random(random));
+                        }
+                    }
+
+                    if (blockState.canPlaceAt(world, blockPos2)) {
+                        BlockState blockState2 = world.getBlockState(blockPos2);
+                        if (blockState2.isOf(Blocks.WATER) && world.getFluidState(blockPos2).getLevel() == 8) {
+                            world.setBlockState(blockPos2, blockState, 3);
+                        } else if (blockState2.isOf(Blocks.SEAGRASS) && random.nextInt(10) == 0) {
+                            ((Fertilizable) Blocks.SEAGRASS).grow((ServerWorld) world, random, blockPos2, blockState2);
+                        }
+                    }
+                }
+
+            }
+            return true;
+        } else {
+            return false;
+        }
+    }
+
 }
