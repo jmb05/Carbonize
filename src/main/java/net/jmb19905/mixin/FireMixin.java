@@ -77,9 +77,9 @@ public abstract class FireMixin {
                     float randomVal = random.nextFloat();
                     if (randomVal > exposure) {
                         var newState = burnRecipe.result().getDefaultState();
-                        if (state.contains(Properties.AXIS)) {
-                            var rotation = state.get(Properties.AXIS);
-                            newState = newState.with(Properties.AXIS, rotation);
+                        if (state.contains(Properties.HORIZONTAL_FACING)) {
+                            var rotation = state.get(Properties.HORIZONTAL_FACING);
+                            newState = newState.with(Properties.HORIZONTAL_FACING, rotation);
                         }
                         world.setBlockState(pos, newState);
                         return true;
