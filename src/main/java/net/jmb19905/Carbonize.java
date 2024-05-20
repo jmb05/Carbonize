@@ -2,10 +2,7 @@ package net.jmb19905;
 
 import net.fabricmc.api.ModInitializer;
 import net.fabricmc.fabric.api.event.player.UseBlockCallback;
-import net.fabricmc.fabric.api.item.v1.FabricItemSettings;
 import net.fabricmc.fabric.api.itemgroup.v1.ItemGroupEvents;
-import net.fabricmc.fabric.api.object.builder.v1.block.FabricBlockSettings;
-import net.fabricmc.fabric.api.object.builder.v1.block.entity.FabricBlockEntityTypeBuilder;
 import net.fabricmc.fabric.api.registry.FlammableBlockRegistry;
 import net.fabricmc.fabric.api.registry.FuelRegistry;
 import net.jmb19905.block.*;
@@ -40,51 +37,50 @@ public class Carbonize implements ModInitializer {
 
 	public static final CarbonizeConfig CONFIG = CarbonizeConfig.createAndLoad();
 
-	public static final Block CHARCOAL_LOG = new FallingPillarBlock(FabricBlockSettings.create()
+	public static final Block CHARCOAL_LOG = new FallingPillarBlock(AbstractBlock.Settings.create()
 			.mapColor(state -> MapColor.BLACK)
 			.instrument(Instrument.BASS)
 			.strength(2.0f)
 			.sounds(BlockSoundGroup.WOOD)
 			.burnable());
-	public static final Block CHARCOAL_PLANKS = new FlammableFallingBlock(FabricBlockSettings.create()
+	public static final Block CHARCOAL_PLANKS = new FlammableFallingBlock(AbstractBlock.Settings.create()
 			.mapColor(state -> MapColor.BLACK)
 			.instrument(Instrument.BASS)
 			.strength(2.0f)
 			.sounds(BlockSoundGroup.WOOD)
 			.burnable());
-	public static final Block CHARCOAL_STAIRS = new FlammableFallingStairsBlock(CHARCOAL_PLANKS.getDefaultState(), FabricBlockSettings.copy(CHARCOAL_PLANKS));
-	public static final Block CHARCOAL_SLAB = new FlammableFallingSlabBlock(FabricBlockSettings.copy(CHARCOAL_PLANKS));
+	public static final Block CHARCOAL_STAIRS = new FlammableFallingStairsBlock(CHARCOAL_PLANKS.getDefaultState(), AbstractBlock.Settings.copy(CHARCOAL_PLANKS));
+	public static final Block CHARCOAL_SLAB = new FlammableFallingSlabBlock(AbstractBlock.Settings.copy(CHARCOAL_PLANKS));
 
-	public static final Block ASH_LAYER = new AshBlock(FabricBlockSettings.create()
+	public static final Block ASH_LAYER = new AshBlock(AbstractBlock.Settings.create()
 			.mapColor(MapColor.GRAY)
 			.sounds(BlockSoundGroup.SAND)
 			.replaceable()
-			.notSolid()
 			.ticksRandomly()
 			.strength(0.1f)
 			.blockVision((state, world, pos) -> state.get(SnowBlock.LAYERS) >= 8)
 			.pistonBehavior(PistonBehavior.DESTROY)
 			.ticksRandomly());
-	public static final Block ASH_BLOCK = new FallingBlock(FabricBlockSettings.create()
+	public static final Block ASH_BLOCK = new AshBlock(AbstractBlock.Settings.create()
 			.mapColor(MapColor.GRAY)
 			.sounds(BlockSoundGroup.SAND));
-	public static final Block CHARRING_WOOD = new CharringWoodBlock(FabricBlockSettings.create());
-	public static final Block CHARCOAL_BLOCK = new Block(FabricBlockSettings.copy(Blocks.COAL_BLOCK));
+	public static final Block CHARRING_WOOD = new CharringWoodBlock(AbstractBlock.Settings.create());
+	public static final Block CHARCOAL_BLOCK = new Block(AbstractBlock.Settings.copy(Blocks.COAL_BLOCK));
 
-	public static final BlockItem CHARCOAL_LOG_ITEM = new BlockItem(CHARCOAL_LOG, new FabricItemSettings());
-	public static final BlockItem CHARCOAL_PLANKS_ITEM = new BlockItem(CHARCOAL_PLANKS, new FabricItemSettings());
-	public static final BlockItem CHARCOAL_STAIRS_ITEM = new BlockItem(CHARCOAL_STAIRS, new FabricItemSettings());
-	public static final BlockItem CHARCOAL_SLAB_ITEM = new BlockItem(CHARCOAL_SLAB, new FabricItemSettings());
-	public static final BlockItem ASH_LAYER_ITEM = new BlockItem(ASH_LAYER, new FabricItemSettings());
-	public static final BlockItem ASH_BLOCK_ITEM = new BlockItem(ASH_BLOCK, new FabricItemSettings());
-	public static final BlockItem CHARCOAL_BLOCK_ITEM = new BlockItem(CHARCOAL_BLOCK, new FabricItemSettings());
+	public static final BlockItem CHARCOAL_LOG_ITEM = new BlockItem(CHARCOAL_LOG, new Item.Settings());
+	public static final BlockItem CHARCOAL_PLANKS_ITEM = new BlockItem(CHARCOAL_PLANKS, new Item.Settings());
+	public static final BlockItem CHARCOAL_STAIRS_ITEM = new BlockItem(CHARCOAL_STAIRS, new Item.Settings());
+	public static final BlockItem CHARCOAL_SLAB_ITEM = new BlockItem(CHARCOAL_SLAB, new Item.Settings());
+	public static final BlockItem ASH_LAYER_ITEM = new BlockItem(ASH_LAYER, new Item.Settings());
+	public static final BlockItem ASH_BLOCK_ITEM = new BlockItem(ASH_BLOCK, new Item.Settings());
+	public static final BlockItem CHARCOAL_BLOCK_ITEM = new BlockItem(CHARCOAL_BLOCK, new Item.Settings());
 
-	public static final Item ASH = new BoneMealItem(new FabricItemSettings());
+	public static final Item ASH = new BoneMealItem(new Item.Settings());
 
 	public static final BlockEntityType<CharringWoodBlockEntity> CHARRING_WOOD_TYPE = Registry.register(
 			Registries.BLOCK_ENTITY_TYPE,
 			new Identifier(MOD_ID, "charring_wood"),
-			FabricBlockEntityTypeBuilder.create(CharringWoodBlockEntity::new).addBlock(CHARRING_WOOD).build()
+			BlockEntityType.Builder.create(CharringWoodBlockEntity::new, CHARRING_WOOD).build()
 	);
 
 	public static final RecipeType<BurnRecipe> BURN_RECIPE_TYPE = registerRecipeType(BurnRecipeSerializer.ID);

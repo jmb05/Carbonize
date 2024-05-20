@@ -1,5 +1,5 @@
 {
   "type": "carbonize:burn",
-  "input": "minecraft:wooden_stairs",
+  "input": "#minecraft:wooden_stairs",
   "output": "carbonize:charcoal_stairs"
 }

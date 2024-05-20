@@ -1,5 +1,5 @@
 plugins {
-	id 'fabric-loom' version '1.5-SNAPSHOT'
+	id 'fabric-loom' version '1.6-SNAPSHOT'
 	id 'maven-publish'
 }
 
@@ -58,7 +58,7 @@ dependencies {
 	modImplementation "io.wispforest:owo-lib:${project.owo_version}"
     annotationProcessor "io.wispforest:owo-lib:${project.owo_version}"
 
-	modApi "com.terraformersmc:modmenu:7.1.0"
+	modApi "com.terraformersmc:modmenu:${project.mod_menu_version}"
 }
 
 processResources {

@@ -1,11 +1,10 @@
 package net.jmb19905.block;
 
-import net.minecraft.block.Block;
-import net.minecraft.block.BlockState;
-import net.minecraft.block.ShapeContext;
-import net.minecraft.block.Waterloggable;
+import com.mojang.serialization.MapCodec;
+import net.minecraft.block.*;
 import net.minecraft.block.enums.SlabType;
 import net.minecraft.entity.ai.pathing.NavigationType;
+import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.fluid.Fluid;
 import net.minecraft.fluid.FluidState;
 import net.minecraft.fluid.Fluids;
@@ -31,9 +30,16 @@ public class FlammableFallingSlabBlock extends FlammableFallingBlock implements 
     protected static final VoxelShape BOTTOM_SHAPE = Block.createCuboidShape(0.0, 0.0, 0.0, 16.0, 8.0, 16.0);
     protected static final VoxelShape TOP_SHAPE = Block.createCuboidShape(0.0, 8.0, 0.0, 16.0, 16.0, 16.0);
 
+    public static final MapCodec<FlammableFallingSlabBlock> CODEC = createCodec(FlammableFallingSlabBlock::new);
+
     public FlammableFallingSlabBlock(Settings settings) {
         super(settings);
         this.setDefaultState(this.getDefaultState().with(TYPE, SlabType.BOTTOM).with(WATERLOGGED, false));
+    }
+
+    @Override
+    protected MapCodec<? extends FallingBlock> getCodec() {
+        return CODEC;
     }
 
     @Override
@@ -112,9 +118,9 @@ public class FlammableFallingSlabBlock extends FlammableFallingBlock implements 
     }
 
     @Override
-    public boolean canFillWithFluid(BlockView world, BlockPos pos, BlockState state, Fluid fluid) {
+    public boolean canFillWithFluid(@Nullable PlayerEntity player, BlockView world, BlockPos pos, BlockState state, Fluid fluid) {
         if (state.get(TYPE) != SlabType.DOUBLE) {
-            return Waterloggable.super.canFillWithFluid(world, pos, state, fluid);
+            return Waterloggable.super.canFillWithFluid(player, world, pos, state, fluid);
         }
         return false;
     }
@@ -128,17 +134,15 @@ public class FlammableFallingSlabBlock extends FlammableFallingBlock implements 
     }
 
     @Override
-    public boolean canPathfindThrough(BlockState state, BlockView world, BlockPos pos, NavigationType type) {
+    protected boolean canPathfindThrough(BlockState state, NavigationType type) {
         switch (type) {
             case LAND, AIR -> {
                 return false;
             }
             case WATER -> {
-                return world.getFluidState(pos).isIn(FluidTags.WATER);
+                return state.getFluidState().isIn(FluidTags.WATER);
             }
         }
         return false;
     }
-
-
 }

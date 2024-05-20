@@ -4,6 +4,7 @@ import net.jmb19905.Carbonize;
 import net.jmb19905.block.AshBlock;
 import net.jmb19905.recipe.BurnRecipe;
 import net.minecraft.block.*;
+import net.minecraft.recipe.RecipeEntry;
 import net.minecraft.registry.tag.BiomeTags;
 import net.minecraft.server.world.ServerWorld;
 import net.minecraft.state.property.Properties;
@@ -69,7 +70,8 @@ public abstract class FireMixin {
         BlockState state = world.getBlockState(pos);
         world.getRecipeManager().listAllOfType(Carbonize.BURN_RECIPE_TYPE);
         if (Carbonize.CONFIG.burnCrafting()) {
-            for (BurnRecipe burnRecipe : world.getRecipeManager().listAllOfType(Carbonize.BURN_RECIPE_TYPE)) {
+            for (RecipeEntry<BurnRecipe> burnRecipeEntry : world.getRecipeManager().listAllOfType(Carbonize.BURN_RECIPE_TYPE)) {
+                BurnRecipe burnRecipe = burnRecipeEntry.value();
                 if (state.isIn(burnRecipe.input())) {
                     float exposure = getExposed(world, pos);
                     float randomVal = random.nextFloat();

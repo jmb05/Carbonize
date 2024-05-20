@@ -6,6 +6,7 @@ import net.fabricmc.fabric.api.datagen.v1.FabricDataGenerator;
 public class CarbonizeDataGenerator implements DataGeneratorEntrypoint {
 	@Override
 	public void onInitializeDataGenerator(FabricDataGenerator fabricDataGenerator) {
+		//fixme: DataGen is broken
 		var pack = fabricDataGenerator.createPack();
 		pack.addProvider(CarbonizeModelDataGen::new);
 		pack.addProvider(CarbonizeLanguageDataGen::new);

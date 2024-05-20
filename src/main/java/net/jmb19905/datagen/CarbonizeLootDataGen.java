@@ -17,11 +17,14 @@ import net.minecraft.loot.entry.LootPoolEntry;
 import net.minecraft.loot.function.SetCountLootFunction;
 import net.minecraft.loot.provider.number.ConstantLootNumberProvider;
 import net.minecraft.predicate.StatePredicate;
+import net.minecraft.registry.RegistryWrapper;
+
+import java.util.concurrent.CompletableFuture;
 
 public class CarbonizeLootDataGen extends FabricBlockLootTableProvider {
 
-    protected CarbonizeLootDataGen(FabricDataOutput dataOutput) {
-        super(dataOutput);
+    protected CarbonizeLootDataGen(FabricDataOutput dataOutput, CompletableFuture<RegistryWrapper.WrapperLookup> registryLookup) {
+        super(dataOutput, registryLookup);
     }
 
     @Override

@@ -1,5 +1,7 @@
 package net.jmb19905.block;
 
+import com.mojang.serialization.MapCodec;
+import com.mojang.serialization.codecs.RecordCodecBuilder;
 import net.minecraft.block.*;
 import net.minecraft.block.enums.BlockHalf;
 import net.minecraft.block.enums.StairShape;
@@ -46,6 +48,8 @@ public class FlammableFallingStairsBlock extends FlammableFallingBlock implement
     private final FlammableFallingBlock baseBlock;
     private final BlockState baseBlockState;
 
+    public static MapCodec<FlammableFallingStairsBlock> CODEC = RecordCodecBuilder.mapCodec(instance -> instance.group(BlockState.CODEC.fieldOf("base").forGetter(FlammableFallingStairsBlock::getBaseBlockState), createSettingsCodec()).apply(instance, FlammableFallingStairsBlock::new));
+
     private static VoxelShape[] composeShapes(VoxelShape base, VoxelShape northWest, VoxelShape northEast, VoxelShape southWest, VoxelShape southEast) {
         return IntStream.range(0, 16).mapToObj(i -> composeShape(i, base, northWest, northEast, southWest, southEast)).toArray(VoxelShape[]::new);
     }
@@ -75,6 +79,15 @@ public class FlammableFallingStairsBlock extends FlammableFallingBlock implement
         }
         this.baseBlock = (FlammableFallingBlock) baseBlockState.getBlock();
         this.baseBlockState = baseBlockState;
+    }
+
+    public BlockState getBaseBlockState() {
+        return baseBlockState;
+    }
+
+    @Override
+    protected MapCodec<? extends FallingBlock> getCodec() {
+        return CODEC;
     }
 
     @Override
@@ -116,7 +129,7 @@ public class FlammableFallingStairsBlock extends FlammableFallingBlock implement
 
     @Override
     public BlockState getStateForNeighborUpdate(BlockState state, Direction direction, BlockState neighborState, WorldAccess world, BlockPos pos, BlockPos neighborPos) {
-        if (state.get(WATERLOGGED).booleanValue()) {
+        if (state.get(WATERLOGGED)) {
             world.scheduleFluidTick(pos, Fluids.WATER, Fluids.WATER.getTickRate(world));
         }
         if (direction.getAxis().isHorizontal()) {
@@ -210,14 +223,14 @@ public class FlammableFallingStairsBlock extends FlammableFallingBlock implement
 
     @Override
     public FluidState getFluidState(BlockState state) {
-        if (state.get(WATERLOGGED).booleanValue()) {
+        if (state.get(WATERLOGGED)) {
             return Fluids.WATER.getStill(false);
         }
         return super.getFluidState(state);
     }
 
     @Override
-    public boolean canPathfindThrough(BlockState state, BlockView world, BlockPos pos, NavigationType type) {
+    protected boolean canPathfindThrough(BlockState state, NavigationType type) {
         return false;
     }
 

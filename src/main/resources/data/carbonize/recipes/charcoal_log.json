@@ -1,5 +1,5 @@
 {
   "type": "carbonize:burn",
-  "input": "minecraft:logs",
+  "input": "#minecraft:logs",
   "output": "carbonize:charcoal_log"
 }

@@ -1,5 +1,6 @@
 package net.jmb19905.block;
 
+import com.mojang.serialization.MapCodec;
 import net.fabricmc.fabric.api.registry.FlammableBlockRegistry;
 import net.jmb19905.Carbonize;
 import net.jmb19905.blockEntity.CharringWoodBlockEntity;
@@ -24,8 +25,15 @@ import java.util.List;
 
 public class CharringWoodBlock extends BlockWithEntity {
 
+    public static final MapCodec<CharringWoodBlock> CODEC = createCodec(CharringWoodBlock::new);
+
     public CharringWoodBlock(Settings settings) {
         super(settings);
+    }
+
+    @Override
+    protected MapCodec<? extends BlockWithEntity> getCodec() {
+        return CODEC;
     }
 
     @Nullable
@@ -42,7 +50,7 @@ public class CharringWoodBlock extends BlockWithEntity {
     @Nullable
     @Override
     public <T extends BlockEntity> BlockEntityTicker<T> getTicker(World world, BlockState state, BlockEntityType<T> type) {
-        return checkType(type, Carbonize.CHARRING_WOOD_TYPE, CharringWoodBlockEntity::tick);
+        return validateTicker(type, Carbonize.CHARRING_WOOD_TYPE, CharringWoodBlockEntity::tick);
     }
 
     @Override

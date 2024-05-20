@@ -1,5 +1,6 @@
 package net.jmb19905.block;
 
+import com.mojang.serialization.MapCodec;
 import net.jmb19905.Carbonize;
 import net.minecraft.block.BlockState;
 import net.minecraft.block.Blocks;
@@ -16,8 +17,15 @@ import net.minecraft.util.math.random.Random;
 import net.minecraft.world.World;
 
 public class FlammableFallingBlock extends FallingBlock {
+    public MapCodec<FlammableFallingBlock> CODEC = createCodec(FlammableFallingBlock::new);
+
     public FlammableFallingBlock(Settings settings) {
         super(settings);
+    }
+
+    @Override
+    protected MapCodec<? extends FallingBlock> getCodec() {
+        return CODEC;
     }
 
     @Override

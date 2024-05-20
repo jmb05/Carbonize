@@ -33,8 +33,8 @@ public abstract class FallingBlockEntityMixin extends Entity {
     }
 
     @Inject(method = "initDataTracker", at = @At("TAIL"))
-    public void initDataTracker$inject(CallbackInfo ci) {
-        this.dataTracker.startTracking(ON_FIRE, false);
+    public void initDataTracker$inject(DataTracker.Builder builder, CallbackInfo ci) {
+        builder.add(ON_FIRE, false);
     }
 
     @Override
@@ -61,6 +61,7 @@ public abstract class FallingBlockEntityMixin extends Entity {
         }
     }
 
+    @SuppressWarnings("UnreachableCode")
     @Inject(at = @At(value = "INVOKE", target = "Lnet/minecraft/entity/FallingBlockEntity;onDestroyedOnLanding(Lnet/minecraft/block/Block;Lnet/minecraft/util/math/BlockPos;)V", shift = At.Shift.AFTER), method = "tick", cancellable = true)
     private void tick$dontDropAshLayer(CallbackInfo ci) {
         var entity = (FallingBlockEntity) (Object) this;
@@ -73,6 +74,7 @@ public abstract class FallingBlockEntityMixin extends Entity {
         }
     }
 
+    @SuppressWarnings("UnreachableCode")
     @Inject(method = "tick", at = @At(value = "INVOKE", target = "Lnet/minecraft/entity/FallingBlockEntity;dropItem(Lnet/minecraft/item/ItemConvertible;)Lnet/minecraft/entity/ItemEntity;"), cancellable = true)
     private void tick$dropAsItem(CallbackInfo ci){
         FallingBlockEntity instance = (FallingBlockEntity) (Object) this;

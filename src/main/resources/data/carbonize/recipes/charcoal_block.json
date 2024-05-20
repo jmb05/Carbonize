@@ -12,7 +12,8 @@
     "###"
   ],
   "result": {
-    "item": "carbonize:charcoal_block"
+    "count": 1,
+    "id": "carbonize:charcoal_block"
   },
   "show_notification": true
 }

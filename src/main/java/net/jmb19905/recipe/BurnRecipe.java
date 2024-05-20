@@ -7,30 +7,11 @@ import net.minecraft.item.ItemStack;
 import net.minecraft.recipe.Recipe;
 import net.minecraft.recipe.RecipeSerializer;
 import net.minecraft.recipe.RecipeType;
-import net.minecraft.registry.DynamicRegistryManager;
+import net.minecraft.registry.RegistryWrapper;
 import net.minecraft.registry.tag.TagKey;
-import net.minecraft.util.Identifier;
 import net.minecraft.world.World;
 
-public class BurnRecipe implements Recipe<SimpleInventory> {
-
-    private final TagKey<Block> input;
-    private final Block result;
-    private final Identifier id;
-
-    public BurnRecipe(Identifier id, TagKey<Block> input, Block result) {
-        this.input = input;
-        this.result = result;
-        this.id = id;
-    }
-
-    public Block result() {
-        return result;
-    }
-
-    public TagKey<Block> input() {
-        return input;
-    }
+public record BurnRecipe(TagKey<Block> input, Block result) implements Recipe<SimpleInventory> {
 
     @Override
     public boolean matches(SimpleInventory inventory, World world) {
@@ -38,7 +19,7 @@ public class BurnRecipe implements Recipe<SimpleInventory> {
     }
 
     @Override
-    public ItemStack craft(SimpleInventory inventory, DynamicRegistryManager registryManager) {
+    public ItemStack craft(SimpleInventory inventory, RegistryWrapper.WrapperLookup lookup) {
         return ItemStack.EMPTY;
     }
 
@@ -48,13 +29,8 @@ public class BurnRecipe implements Recipe<SimpleInventory> {
     }
 
     @Override
-    public ItemStack getOutput(DynamicRegistryManager registryManager) {
-        return ItemStack.EMPTY;
-    }
-
-    @Override
-    public Identifier getId() {
-        return id;
+    public ItemStack getResult(RegistryWrapper.WrapperLookup registriesLookup) {
+        return null;
     }
 
     @Override
@@ -66,4 +42,5 @@ public class BurnRecipe implements Recipe<SimpleInventory> {
     public RecipeType<?> getType() {
         return Carbonize.BURN_RECIPE_TYPE;
     }
+
 }
