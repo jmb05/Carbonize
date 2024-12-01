@@ -190,7 +190,7 @@ public class Carbonize implements ModInitializer {
 	private static boolean handleIgnition(ItemStack stack) {
 		System.out.println(stack.streamTags().toList());
 		if (stack.isIn(DAMAGE_IGNITERS)) {
-			stack.setDamage(1);
+			stack.setDamage(stack.getDamage() - 1);
 			return true;
 		}
 
