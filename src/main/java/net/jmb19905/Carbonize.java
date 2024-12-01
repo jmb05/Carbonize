@@ -90,6 +90,7 @@ public class Carbonize implements ModInitializer {
 	public static final RecipeType<BurnRecipe> BURN_RECIPE_TYPE = registerRecipeType(BurnRecipeSerializer.ID);
 
 	public static final TagKey<Block> CHARCOAL_PILE_VALID_WALL = TagKey.of(RegistryKeys.BLOCK, new Identifier(MOD_ID, "charcoal_pile_valid_wall"));
+	public static final TagKey<Item> IGNITERS = TagKey.of(RegistryKeys.ITEM, new Identifier(MOD_ID, "igniters"));
 
 	@Override
 	public void onInitialize() {
@@ -169,7 +170,7 @@ public class Carbonize implements ModInitializer {
 		UseBlockCallback.EVENT.register((player, world, hand, hitResult) -> {
 			if (!CONFIG.charcoalPile()) return ActionResult.PASS;
 			ItemStack stack = player.getStackInHand(hand);
-			if (!world.isClient && stack.isOf(Items.FLINT_AND_STEEL) && player.isSneaking()) {
+			if (!world.isClient && stack.isIn(IGNITERS) && player.isSneaking()) {
 				if (hitResult.getType() == HitResult.Type.BLOCK) {
 					BlockPos pos = hitResult.getBlockPos();
 					int i = CharringWoodBlock.checkValid(world, pos, hitResult.getSide());
