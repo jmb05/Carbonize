@@ -1,5 +1,6 @@
 {
   "values": [
-    "minecraft:flint_and_steel"
+    "#carbonize:consumer_igniters",
+    "#carbonize:damage_igniters"
   ]
 }
