@@ -6,8 +6,11 @@ import net.minecraft.block.Blocks;
 import net.minecraft.block.ConnectingBlock;
 import net.minecraft.block.entity.BlockEntity;
 import net.minecraft.nbt.NbtCompound;
-import net.minecraft.registry.tag.BlockTags;
+import net.minecraft.registry.Registries;
+import net.minecraft.sound.SoundCategory;
+import net.minecraft.sound.SoundEvents;
 import net.minecraft.state.property.BooleanProperty;
+import net.minecraft.util.Identifier;
 import net.minecraft.util.Util;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Direction;
@@ -18,6 +21,8 @@ import java.util.Map;
 public class CharringWoodBlockEntity extends BlockEntity {
 
     private static final Map<Direction, BooleanProperty> DIRECTION_PROPERTIES = ConnectingBlock.FACING_PROPERTIES.entrySet().stream().filter(entry -> entry.getKey() != Direction.DOWN).collect(Util.toMap());
+    public String parentBlockId;
+    public BlockPos mainPos;
     public static final int SINGLE_BURN_TIME = 200;
     private int burnTime = 0;
     private int maxBurnTime = SINGLE_BURN_TIME;
@@ -34,7 +39,14 @@ public class CharringWoodBlockEntity extends BlockEntity {
             }
             entity.burnTime++;
             if (entity.burnTime >= entity.maxBurnTime) {
-                world.setBlockState(pos, Carbonize.CHARCOAL_LOG.getDefaultState());
+                world.getRecipeManager().listAllOfType(Carbonize.BURN_RECIPE_TYPE).forEach(burnRecipe -> {
+                    CharringWoodBlockEntity charringEntity = (CharringWoodBlockEntity) blockEntity;
+                    if (Registries.BLOCK.get(new Identifier(charringEntity.parentBlockId)).getDefaultState().isIn(burnRecipe.input())) {
+                        if (pos.equals(charringEntity.mainPos))
+                            world.playSound(null, pos, SoundEvents.BLOCK_FIRE_EXTINGUISH, SoundCategory.BLOCKS, 1, 1);
+                        world.setBlockState(pos, burnRecipe.result().getDefaultState());
+                    }
+                });
             }
         }
     }
@@ -48,11 +60,19 @@ public class CharringWoodBlockEntity extends BlockEntity {
                 fireState = fireState.with(DIRECTION_PROPERTIES.get(dir.getOpposite()), true);
             }
             world.setBlockState(sidePos, fireState);
-        } else if (sideState.isIn(BlockTags.LOGS)) {
+        } else if (sideState.isIn(Carbonize.CHARCOAL_PILE_VALID_FUEL)) {
             world.setBlockState(sidePos, Carbonize.CHARRING_WOOD.getDefaultState());
-            world.getBlockEntity(sidePos, Carbonize.CHARRING_WOOD_TYPE).ifPresent(blockEntity -> blockEntity.maxBurnTime = entity.maxBurnTime);
+            world.getBlockEntity(sidePos, Carbonize.CHARRING_WOOD_TYPE).ifPresent(blockEntity -> {
+                blockEntity.maxBurnTime = entity.maxBurnTime;
+                blockEntity.parentBlockId = entity.parentBlockId;
+                blockEntity.mainPos = entity.mainPos;
+            });
         } else if (sideState.isOf(Carbonize.CHARRING_WOOD)) {
-            world.getBlockEntity(sidePos, Carbonize.CHARRING_WOOD_TYPE).ifPresent(blockEntity -> blockEntity.maxBurnTime = entity.maxBurnTime);
+            world.getBlockEntity(sidePos, Carbonize.CHARRING_WOOD_TYPE).ifPresent(blockEntity -> {
+                blockEntity.maxBurnTime = entity.maxBurnTime;
+                blockEntity.parentBlockId = entity.parentBlockId;
+                blockEntity.mainPos = entity.mainPos;
+            });
         }
     }
 
@@ -64,11 +84,17 @@ public class CharringWoodBlockEntity extends BlockEntity {
     protected void writeNbt(NbtCompound nbt) {
         nbt.putInt("BurnTime", burnTime);
         nbt.putInt("MaxBurnTime", maxBurnTime);
+        nbt.putString("parentBlockId", parentBlockId);
+        nbt.putInt("mainPosX", mainPos.getX());
+        nbt.putInt("mainPosY", mainPos.getY());
+        nbt.putInt("mainPosZ", mainPos.getZ());
     }
 
     @Override
     public void readNbt(NbtCompound nbt) {
         burnTime = nbt.getInt("BurnTime");
         maxBurnTime = nbt.getInt("MaxBurnTime");
+        parentBlockId = nbt.getString("parentBlockId");
+        mainPos = new BlockPos(nbt.getInt("mainPosX"), nbt.getInt("mainPosY"), nbt.getInt("mainPosZ"));
     }
 }

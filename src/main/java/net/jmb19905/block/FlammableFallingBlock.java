@@ -1,6 +1,5 @@
 package net.jmb19905.block;
 
-import net.jmb19905.Carbonize;
 import net.minecraft.block.BlockState;
 import net.minecraft.block.Blocks;
 import net.minecraft.block.ConnectingBlock;
@@ -29,7 +28,7 @@ public class FlammableFallingBlock extends FallingBlock {
         boolean burning = false;
         for (Direction dir : Direction.values()) {
             BlockState fireState = world.getBlockState(pos.offset(dir));
-            Carbonize.LOGGER.info("Block: " + fireState + " Dir: " + dir);
+            //Carbonize.LOGGER.info("Block: " + fireState + " Dir: " + dir);
             if (fireState.isIn(BlockTags.FIRE)) {
                 if (dir == Direction.UP || (fireState.contains(ConnectingBlock.FACING_PROPERTIES.get(dir.getOpposite())) && fireState.get(ConnectingBlock.FACING_PROPERTIES.get(dir.getOpposite())))) {
                     burning = true;

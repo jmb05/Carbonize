@@ -68,7 +68,7 @@ public class Carbonize implements ModInitializer {
 	public static final Block ASH_BLOCK = new FallingBlock(FabricBlockSettings.create()
 			.mapColor(MapColor.GRAY)
 			.sounds(BlockSoundGroup.SAND));
-	public static final Block CHARRING_WOOD = new CharringWoodBlock(FabricBlockSettings.create());
+	public static final Block CHARRING_WOOD = new CharringWoodBlock(FabricBlockSettings.create().luminance(15));
 	public static final Block CHARCOAL_BLOCK = new Block(FabricBlockSettings.copy(Blocks.COAL_BLOCK));
 
 	public static final BlockItem CHARCOAL_LOG_ITEM = new BlockItem(CHARCOAL_LOG, new FabricItemSettings());
@@ -90,6 +90,7 @@ public class Carbonize implements ModInitializer {
 	public static final RecipeType<BurnRecipe> BURN_RECIPE_TYPE = registerRecipeType(BurnRecipeSerializer.ID);
 
 	public static final TagKey<Block> CHARCOAL_PILE_VALID_WALL = TagKey.of(RegistryKeys.BLOCK, new Identifier(MOD_ID, "charcoal_pile_valid_wall"));
+	public static final TagKey<Block> CHARCOAL_PILE_VALID_FUEL = TagKey.of(RegistryKeys.BLOCK, new Identifier(MOD_ID, "charcoal_pile_valid_fuel"));
 	public static final TagKey<Item> DAMAGE_IGNITERS = TagKey.of(RegistryKeys.ITEM, new Identifier(MOD_ID, "damage_igniters"));
 	public static final TagKey<Item> CONSUME_IGNITERS = TagKey.of(RegistryKeys.ITEM, new Identifier(MOD_ID, "consume_igniters"));
 	public static final TagKey<Item> IGNITERS = TagKey.of(RegistryKeys.ITEM, new Identifier(MOD_ID, "igniters"));
@@ -176,8 +177,13 @@ public class Carbonize implements ModInitializer {
 					BlockPos pos = hitResult.getBlockPos();
 					int i = CharringWoodBlock.checkValid(world, pos, hitResult.getSide());
 					if (i >= 8 && handleIgnition(stack)) {
+						BlockState state = world.getBlockState(pos);
 						world.setBlockState(pos, Carbonize.CHARRING_WOOD.getDefaultState());
-						world.getBlockEntity(pos, CHARRING_WOOD_TYPE).ifPresent(blockEntity -> blockEntity.setLogCount(i));
+						world.getBlockEntity(pos, CHARRING_WOOD_TYPE).ifPresent(blockEntity -> {
+							blockEntity.setLogCount(i);
+							blockEntity.parentBlockId = Registries.BLOCK.getId(state.getBlock()).toString();
+							blockEntity.mainPos = pos;
+						});
 						return ActionResult.CONSUME;
 					}
 				}
@@ -188,7 +194,6 @@ public class Carbonize implements ModInitializer {
 	}
 
 	private static boolean handleIgnition(ItemStack stack) {
-		System.out.println(stack.streamTags().toList());
 		if (stack.isIn(DAMAGE_IGNITERS)) {
 			stack.setDamage(stack.getDamage() + 1);
 			return true;
