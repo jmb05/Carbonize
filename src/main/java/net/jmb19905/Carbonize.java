@@ -90,7 +90,9 @@ public class Carbonize implements ModInitializer {
 	public static final RecipeType<BurnRecipe> BURN_RECIPE_TYPE = registerRecipeType(BurnRecipeSerializer.ID);
 
 	public static final TagKey<Block> CHARCOAL_PILE_VALID_WALL = TagKey.of(RegistryKeys.BLOCK, new Identifier(MOD_ID, "charcoal_pile_valid_wall"));
-
+	public static final TagKey<Item> DAMAGE_IGNITERS = TagKey.of(RegistryKeys.ITEM, new Identifier(MOD_ID, "damage_igniters"));
+	public static final TagKey<Item> CONSUME_IGNITERS = TagKey.of(RegistryKeys.ITEM, new Identifier(MOD_ID, "consume_igniters"));
+	public static final TagKey<Item> IGNITERS = TagKey.of(RegistryKeys.ITEM, new Identifier(MOD_ID, "igniters"));
 	@Override
 	public void onInitialize() {
 		Registry.register(Registries.BLOCK, new Identifier(MOD_ID, "charcoal_log"), CHARCOAL_LOG);
@@ -169,11 +171,11 @@ public class Carbonize implements ModInitializer {
 		UseBlockCallback.EVENT.register((player, world, hand, hitResult) -> {
 			if (!CONFIG.charcoalPile()) return ActionResult.PASS;
 			ItemStack stack = player.getStackInHand(hand);
-			if (!world.isClient && stack.isOf(Items.FLINT_AND_STEEL) && player.isSneaking()) {
+			if (!world.isClient && stack.isIn(IGNITERS) && player.isSneaking()) {
 				if (hitResult.getType() == HitResult.Type.BLOCK) {
 					BlockPos pos = hitResult.getBlockPos();
 					int i = CharringWoodBlock.checkValid(world, pos, hitResult.getSide());
-					if (i >= 8) {
+					if (i >= 8 && handleIgnition(stack)) {
 						world.setBlockState(pos, Carbonize.CHARRING_WOOD.getDefaultState());
 						world.getBlockEntity(pos, CHARRING_WOOD_TYPE).ifPresent(blockEntity -> blockEntity.setLogCount(i));
 						return ActionResult.CONSUME;
@@ -183,6 +185,21 @@ public class Carbonize implements ModInitializer {
 			return ActionResult.PASS;
 		});
 
+	}
+
+	private static boolean handleIgnition(ItemStack stack) {
+		System.out.println(stack.streamTags().toList());
+		if (stack.isIn(DAMAGE_IGNITERS)) {
+			stack.setDamage(stack.getDamage() + 1);
+			return true;
+		}
+
+		if (stack.isIn(CONSUME_IGNITERS)) {
+			stack.decrement(1);
+			return true;
+		}
+
+		return false;
 	}
 
 	@SuppressWarnings("SameParameterValue")
