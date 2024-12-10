@@ -17,6 +17,7 @@ import net.minecraft.block.*;
 import net.minecraft.block.entity.BlockEntityType;
 import net.minecraft.block.enums.Instrument;
 import net.minecraft.block.piston.PistonBehavior;
+import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.item.*;
 import net.minecraft.recipe.Recipe;
 import net.minecraft.recipe.RecipeType;
@@ -27,6 +28,7 @@ import net.minecraft.registry.tag.BlockTags;
 import net.minecraft.registry.tag.TagKey;
 import net.minecraft.sound.BlockSoundGroup;
 import net.minecraft.util.ActionResult;
+import net.minecraft.util.Hand;
 import net.minecraft.util.Identifier;
 import net.minecraft.util.hit.HitResult;
 import net.minecraft.util.math.BlockPos;
@@ -176,7 +178,7 @@ public class Carbonize implements ModInitializer {
 				if (hitResult.getType() == HitResult.Type.BLOCK) {
 					BlockPos pos = hitResult.getBlockPos();
 					int i = CharringWoodBlock.checkValid(world, pos, hitResult.getSide());
-					if (i >= 8 && handleIgnition(stack)) {
+					if (i >= 8 && handleIgnition(stack, player, hand)) {
 						BlockState state = world.getBlockState(pos);
 						world.setBlockState(pos, Carbonize.CHARRING_WOOD.getDefaultState());
 						world.getBlockEntity(pos, CHARRING_WOOD_TYPE).ifPresent(blockEntity -> {
@@ -193,9 +195,9 @@ public class Carbonize implements ModInitializer {
 
 	}
 
-	private static boolean handleIgnition(ItemStack stack) {
+	private static boolean handleIgnition(ItemStack stack, PlayerEntity player, Hand hand) {
 		if (stack.isIn(DAMAGE_IGNITERS)) {
-			stack.setDamage(stack.getDamage() + 1);
+			stack.damage(stack.getDamage() + 1, player, p -> p.sendToolBreakStatus(hand));
 			return true;
 		}
 
