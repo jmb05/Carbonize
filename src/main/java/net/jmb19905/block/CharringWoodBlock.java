@@ -10,7 +10,6 @@ import net.minecraft.block.entity.BlockEntity;
 import net.minecraft.block.entity.BlockEntityTicker;
 import net.minecraft.block.entity.BlockEntityType;
 import net.minecraft.particle.ParticleTypes;
-import net.minecraft.registry.tag.BlockTags;
 import net.minecraft.sound.SoundCategory;
 import net.minecraft.sound.SoundEvents;
 import net.minecraft.util.math.BlockPos;
@@ -91,7 +90,7 @@ public class CharringWoodBlock extends BlockWithEntity {
     private static int check(World world, BlockPos pos, List<BlockPos> alreadyChecked) {
         alreadyChecked.add(pos);
         BlockState state = world.getBlockState(pos);
-        if (!state.isIn(BlockTags.LOGS)) return 0;
+        if (!state.isIn(Carbonize.CHARCOAL_PILE_VALID_FUEL)) return 0;
         int i = 1;
         for (Direction dir : Direction.values()) {
             BlockPos side = pos.offset(dir);
@@ -109,5 +108,4 @@ public class CharringWoodBlock extends BlockWithEntity {
         }
         return i;
     }
-
 }
