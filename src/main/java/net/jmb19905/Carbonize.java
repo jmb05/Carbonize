@@ -70,7 +70,7 @@ public class Carbonize implements ModInitializer {
 	public static final Block ASH_BLOCK = new FallingBlock(FabricBlockSettings.create()
 			.mapColor(MapColor.GRAY)
 			.sounds(BlockSoundGroup.SAND));
-	public static final Block CHARRING_WOOD = new CharringWoodBlock(FabricBlockSettings.create().luminance(15));
+	public static final Block CHARRING_WOOD = new CharringWoodBlock(FabricBlockSettings.create().nonOpaque().luminance(15));
 	public static final Block CHARCOAL_BLOCK = new Block(FabricBlockSettings.copy(Blocks.COAL_BLOCK));
 
 	public static final BlockItem CHARCOAL_LOG_ITEM = new BlockItem(CHARCOAL_LOG, new FabricItemSettings());
@@ -83,9 +83,11 @@ public class Carbonize implements ModInitializer {
 
 	public static final Item ASH = new BoneMealItem(new FabricItemSettings());
 
+
+	public static final Identifier CHARRING_WOOD_ID = new Identifier(MOD_ID, "charring_wood");
 	public static final BlockEntityType<CharringWoodBlockEntity> CHARRING_WOOD_TYPE = Registry.register(
 			Registries.BLOCK_ENTITY_TYPE,
-			new Identifier(MOD_ID, "charring_wood"),
+			CHARRING_WOOD_ID,
 			FabricBlockEntityTypeBuilder.create(CharringWoodBlockEntity::new).addBlock(CHARRING_WOOD).build()
 	);
 
@@ -183,8 +185,8 @@ public class Carbonize implements ModInitializer {
 						world.setBlockState(pos, Carbonize.CHARRING_WOOD.getDefaultState());
 						world.getBlockEntity(pos, CHARRING_WOOD_TYPE).ifPresent(blockEntity -> {
 							blockEntity.setLogCount(i);
-							blockEntity.parentState = state;
-							blockEntity.startingPos = pos;
+							blockEntity.setStartingPos(pos);
+							blockEntity.updateModel(state);
 						});
 						return ActionResult.CONSUME;
 					}

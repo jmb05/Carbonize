@@ -3,9 +3,7 @@ package net.jmb19905.block;
 import net.fabricmc.fabric.api.registry.FlammableBlockRegistry;
 import net.jmb19905.Carbonize;
 import net.jmb19905.blockEntity.CharringWoodBlockEntity;
-import net.minecraft.block.BlockRenderType;
-import net.minecraft.block.BlockState;
-import net.minecraft.block.BlockWithEntity;
+import net.minecraft.block.*;
 import net.minecraft.block.entity.BlockEntity;
 import net.minecraft.block.entity.BlockEntityTicker;
 import net.minecraft.block.entity.BlockEntityType;
@@ -15,11 +13,14 @@ import net.minecraft.sound.SoundEvents;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Direction;
 import net.minecraft.util.math.random.Random;
+import net.minecraft.util.shape.VoxelShape;
+import net.minecraft.world.BlockView;
 import net.minecraft.world.World;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 
 public class CharringWoodBlock extends BlockWithEntity {
 
@@ -36,6 +37,41 @@ public class CharringWoodBlock extends BlockWithEntity {
     @Override
     public BlockRenderType getRenderType(BlockState state) {
         return BlockRenderType.MODEL;
+    }
+
+    @Override
+    public boolean isTransparent(BlockState state, BlockView world, BlockPos pos) {
+        return getEntity(world, pos)
+                .map(CharringWoodBlockEntity::getModel)
+                .map(model -> model.isTransparent(world, pos))
+                .orElseGet(() -> super.isTransparent(state, world, pos));
+    }
+
+    @SuppressWarnings("deprecation")
+    @Override
+    public VoxelShape getCullingShape(BlockState state, BlockView world, BlockPos pos) {
+        return getEntity(world, pos)
+                .map(CharringWoodBlockEntity::getModel)
+                .map(model -> model.getCullingShape(world, pos))
+                .orElseGet(() -> super.getCullingShape(state, world, pos));
+    }
+
+    @SuppressWarnings("deprecation")
+    @Override
+    public VoxelShape getOutlineShape(BlockState state, BlockView world, BlockPos pos, ShapeContext context) {
+        return getEntity(world, pos)
+                .map(CharringWoodBlockEntity::getModel)
+                .map(model -> model.getOutlineShape(world, pos, context))
+                .orElseGet(() -> super.getOutlineShape(state, world, pos, context));
+    }
+
+    @SuppressWarnings("deprecation")
+    @Override
+    public VoxelShape getCollisionShape(BlockState state, BlockView world, BlockPos pos, ShapeContext context) {
+        return getEntity(world, pos)
+                .map(CharringWoodBlockEntity::getModel)
+                .map(model -> model.getCollisionShape(world, pos, context))
+                .orElseGet(() -> super.getCollisionShape(state, world, pos, context));
     }
 
     @Nullable
@@ -76,10 +112,16 @@ public class CharringWoodBlock extends BlockWithEntity {
         }
     }
 
+
     private boolean isFlammable(BlockState state) {
         var entry = FlammableBlockRegistry.getDefaultInstance().get(state.getBlock());
         return entry != null && entry.getBurnChance() > 0;
     }
+
+    public static Optional<CharringWoodBlockEntity> getEntity(BlockView world, BlockPos pos) {
+        return world.getBlockEntity(pos, Carbonize.CHARRING_WOOD_TYPE);
+    }
+
 
     public static int checkValid(World world, BlockPos pos, Direction direction) {
         List<BlockPos> alreadyChecked = new ArrayList<>();
