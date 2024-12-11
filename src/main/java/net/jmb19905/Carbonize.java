@@ -17,6 +17,7 @@ import net.minecraft.block.*;
 import net.minecraft.block.entity.BlockEntityType;
 import net.minecraft.block.enums.Instrument;
 import net.minecraft.block.piston.PistonBehavior;
+import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.item.*;
 import net.minecraft.recipe.Recipe;
 import net.minecraft.recipe.RecipeType;
@@ -27,6 +28,7 @@ import net.minecraft.registry.tag.BlockTags;
 import net.minecraft.registry.tag.TagKey;
 import net.minecraft.sound.BlockSoundGroup;
 import net.minecraft.util.ActionResult;
+import net.minecraft.util.Hand;
 import net.minecraft.util.Identifier;
 import net.minecraft.util.hit.HitResult;
 import net.minecraft.util.math.BlockPos;
@@ -68,7 +70,7 @@ public class Carbonize implements ModInitializer {
 	public static final Block ASH_BLOCK = new FallingBlock(FabricBlockSettings.create()
 			.mapColor(MapColor.GRAY)
 			.sounds(BlockSoundGroup.SAND));
-	public static final Block CHARRING_WOOD = new CharringWoodBlock(FabricBlockSettings.create());
+	public static final Block CHARRING_WOOD = new CharringWoodBlock(FabricBlockSettings.create().luminance(15));
 	public static final Block CHARCOAL_BLOCK = new Block(FabricBlockSettings.copy(Blocks.COAL_BLOCK));
 
 	public static final BlockItem CHARCOAL_LOG_ITEM = new BlockItem(CHARCOAL_LOG, new FabricItemSettings());
@@ -90,6 +92,7 @@ public class Carbonize implements ModInitializer {
 	public static final RecipeType<BurnRecipe> BURN_RECIPE_TYPE = registerRecipeType(BurnRecipeSerializer.ID);
 
 	public static final TagKey<Block> CHARCOAL_PILE_VALID_WALL = TagKey.of(RegistryKeys.BLOCK, new Identifier(MOD_ID, "charcoal_pile_valid_wall"));
+	public static final TagKey<Block> CHARCOAL_PILE_VALID_FUEL = TagKey.of(RegistryKeys.BLOCK, new Identifier(MOD_ID, "charcoal_pile_valid_fuel"));
 	public static final TagKey<Item> DAMAGE_IGNITERS = TagKey.of(RegistryKeys.ITEM, new Identifier(MOD_ID, "damage_igniters"));
 	public static final TagKey<Item> CONSUME_IGNITERS = TagKey.of(RegistryKeys.ITEM, new Identifier(MOD_ID, "consume_igniters"));
 	public static final TagKey<Item> IGNITERS = TagKey.of(RegistryKeys.ITEM, new Identifier(MOD_ID, "igniters"));
@@ -175,9 +178,14 @@ public class Carbonize implements ModInitializer {
 				if (hitResult.getType() == HitResult.Type.BLOCK) {
 					BlockPos pos = hitResult.getBlockPos();
 					int i = CharringWoodBlock.checkValid(world, pos, hitResult.getSide());
-					if (i >= 8 && handleIgnition(stack)) {
+					if (i >= 8 && handleIgnition(stack, player, hand)) {
+						BlockState state = world.getBlockState(pos);
 						world.setBlockState(pos, Carbonize.CHARRING_WOOD.getDefaultState());
-						world.getBlockEntity(pos, CHARRING_WOOD_TYPE).ifPresent(blockEntity -> blockEntity.setLogCount(i));
+						world.getBlockEntity(pos, CHARRING_WOOD_TYPE).ifPresent(blockEntity -> {
+							blockEntity.setLogCount(i);
+							blockEntity.parentState = state;
+							blockEntity.startingPos = pos;
+						});
 						return ActionResult.CONSUME;
 					}
 				}
@@ -187,10 +195,9 @@ public class Carbonize implements ModInitializer {
 
 	}
 
-	private static boolean handleIgnition(ItemStack stack) {
-		System.out.println(stack.streamTags().toList());
+	private static boolean handleIgnition(ItemStack stack, PlayerEntity player, Hand hand) {
 		if (stack.isIn(DAMAGE_IGNITERS)) {
-			stack.setDamage(stack.getDamage() + 1);
+			stack.damage(stack.getDamage() + 1, player, p -> p.sendToolBreakStatus(hand));
 			return true;
 		}
 
