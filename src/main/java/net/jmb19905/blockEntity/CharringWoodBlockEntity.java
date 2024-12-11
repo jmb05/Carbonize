@@ -1,16 +1,18 @@
 package net.jmb19905.blockEntity;
 
 import net.jmb19905.Carbonize;
+import net.jmb19905.util.ObjectHolder;
+import net.jmb19905.util.StateHelper;
 import net.minecraft.block.BlockState;
 import net.minecraft.block.Blocks;
 import net.minecraft.block.ConnectingBlock;
 import net.minecraft.block.entity.BlockEntity;
 import net.minecraft.nbt.NbtCompound;
+import net.minecraft.nbt.NbtHelper;
 import net.minecraft.registry.Registries;
 import net.minecraft.sound.SoundCategory;
 import net.minecraft.sound.SoundEvents;
 import net.minecraft.state.property.BooleanProperty;
-import net.minecraft.util.Identifier;
 import net.minecraft.util.Util;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Direction;
@@ -21,8 +23,8 @@ import java.util.Map;
 public class CharringWoodBlockEntity extends BlockEntity {
 
     private static final Map<Direction, BooleanProperty> DIRECTION_PROPERTIES = ConnectingBlock.FACING_PROPERTIES.entrySet().stream().filter(entry -> entry.getKey() != Direction.DOWN).collect(Util.toMap());
-    public String parentBlockId;
-    public BlockPos mainPos;
+    public BlockState parentState;
+    public BlockPos startingPos;
     public static final int SINGLE_BURN_TIME = 200;
     private int burnTime = 0;
     private int maxBurnTime = SINGLE_BURN_TIME;
@@ -41,15 +43,20 @@ public class CharringWoodBlockEntity extends BlockEntity {
             if (entity.burnTime >= entity.maxBurnTime) {
                 world.getRecipeManager().listAllOfType(Carbonize.BURN_RECIPE_TYPE).forEach(burnRecipe -> {
                     CharringWoodBlockEntity charringEntity = (CharringWoodBlockEntity) blockEntity;
-                    if (Registries.BLOCK.get(new Identifier(charringEntity.parentBlockId)).getDefaultState().isIn(burnRecipe.input())) {
-                        if (pos.equals(charringEntity.mainPos))
+                    if (entity.parentState.isIn(burnRecipe.input())) {
+                        if (pos.equals(charringEntity.startingPos))
                             world.playSound(null, pos, SoundEvents.BLOCK_FIRE_EXTINGUISH, SoundCategory.BLOCKS, 1, 1);
-                        world.setBlockState(pos, burnRecipe.result().getDefaultState());
+                        //var stateHolder = burnRecipe.result().getDefaultState();
+                        var stateHolder = new ObjectHolder<>(burnRecipe.result().getDefaultState());
+                        entity.parentState.getProperties().forEach(value -> stateHolder.updateValue(oldState -> StateHelper.copyProperty(entity.parentState, oldState, value)));
+                        world.setBlockState(pos, stateHolder.getValue());
                     }
                 });
             }
         }
     }
+
+
 
     private static void lightSide(World world, BlockPos pos, Direction dir, CharringWoodBlockEntity entity) {
         var sidePos = pos.offset(dir);
@@ -61,19 +68,20 @@ public class CharringWoodBlockEntity extends BlockEntity {
             }
             world.setBlockState(sidePos, fireState);
         } else if (sideState.isIn(Carbonize.CHARCOAL_PILE_VALID_FUEL)) {
+            var oldState = world.getBlockState(sidePos);
             world.setBlockState(sidePos, Carbonize.CHARRING_WOOD.getDefaultState());
             world.getBlockEntity(sidePos, Carbonize.CHARRING_WOOD_TYPE).ifPresent(blockEntity -> {
-                blockEntity.maxBurnTime = entity.maxBurnTime;
-                blockEntity.parentBlockId = entity.parentBlockId;
-                blockEntity.mainPos = entity.mainPos;
+                blockEntity.transferData(entity);
+                blockEntity.parentState = oldState;
             });
         } else if (sideState.isOf(Carbonize.CHARRING_WOOD)) {
-            world.getBlockEntity(sidePos, Carbonize.CHARRING_WOOD_TYPE).ifPresent(blockEntity -> {
-                blockEntity.maxBurnTime = entity.maxBurnTime;
-                blockEntity.parentBlockId = entity.parentBlockId;
-                blockEntity.mainPos = entity.mainPos;
-            });
+            world.getBlockEntity(sidePos, Carbonize.CHARRING_WOOD_TYPE).ifPresent(blockEntity -> blockEntity.transferData(entity));
         }
+    }
+
+    public void transferData(CharringWoodBlockEntity parent) {
+        this.maxBurnTime = parent.maxBurnTime;
+        this.startingPos = parent.startingPos;
     }
 
     public void setLogCount(int logCount) {
@@ -84,17 +92,15 @@ public class CharringWoodBlockEntity extends BlockEntity {
     protected void writeNbt(NbtCompound nbt) {
         nbt.putInt("BurnTime", burnTime);
         nbt.putInt("MaxBurnTime", maxBurnTime);
-        nbt.putString("parentBlockId", parentBlockId);
-        nbt.putInt("mainPosX", mainPos.getX());
-        nbt.putInt("mainPosY", mainPos.getY());
-        nbt.putInt("mainPosZ", mainPos.getZ());
+        nbt.put("ParentState", NbtHelper.fromBlockState(parentState));
+        nbt.put("StartingPos", NbtHelper.fromBlockPos(startingPos));
     }
 
     @Override
     public void readNbt(NbtCompound nbt) {
         burnTime = nbt.getInt("BurnTime");
         maxBurnTime = nbt.getInt("MaxBurnTime");
-        parentBlockId = nbt.getString("parentBlockId");
-        mainPos = new BlockPos(nbt.getInt("mainPosX"), nbt.getInt("mainPosY"), nbt.getInt("mainPosZ"));
+        parentState = NbtHelper.toBlockState(Registries.BLOCK.getReadOnlyWrapper(), nbt.getCompound("ParentState"));
+        startingPos = NbtHelper.toBlockPos(nbt.getCompound("StartingPos"));
     }
 }

@@ -183,8 +183,8 @@ public class Carbonize implements ModInitializer {
 						world.setBlockState(pos, Carbonize.CHARRING_WOOD.getDefaultState());
 						world.getBlockEntity(pos, CHARRING_WOOD_TYPE).ifPresent(blockEntity -> {
 							blockEntity.setLogCount(i);
-							blockEntity.parentBlockId = Registries.BLOCK.getId(state.getBlock()).toString();
-							blockEntity.mainPos = pos;
+							blockEntity.parentState = state;
+							blockEntity.startingPos = pos;
 						});
 						return ActionResult.CONSUME;
 					}
