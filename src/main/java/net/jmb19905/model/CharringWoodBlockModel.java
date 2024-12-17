@@ -13,26 +13,23 @@ import net.minecraft.world.BlockRenderView;
 import java.util.function.Supplier;
 
 public class CharringWoodBlockModel extends ForwardingBakedModel {
-    private final BakedModel original;
 
     public CharringWoodBlockModel(BakedModel base) {
-        this.original = base;
-        setWrapped(base);
-    }
-
-    public void setWrapped(BakedModel model) {
-        this.wrapped = model;
-    }
-
-    @Override
-    public boolean isVanillaAdapter() {
-        return false;
+        this.wrapped = base;
     }
 
     @Override
     public void emitBlockQuads(BlockRenderView blockView, BlockState state, BlockPos pos, Supplier<Random> randomSupplier, RenderContext context) {
         var blockEntity = blockView.getBlockEntity(pos, Carbonize.CHARRING_WOOD_TYPE);
-        blockEntity.ifPresent(charringWoodBlockEntity -> wrapped = MinecraftClient.getInstance().getBlockRenderManager().getModel(charringWoodBlockEntity.getRenderData()));
+        if (blockEntity.isPresent()) {
+            var medium = blockEntity.get().getRenderData();
+            var model = MinecraftClient.getInstance().getBlockRenderManager().getModel(medium);
+            if (!model.equals(this)) {
+                model.emitBlockQuads(blockView, state, pos, randomSupplier, context);
+                return;
+            }
+
+        }
         super.emitBlockQuads(blockView, state, pos, randomSupplier, context);
     }
 }

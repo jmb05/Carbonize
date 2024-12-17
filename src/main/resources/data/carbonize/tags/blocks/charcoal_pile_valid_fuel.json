@@ -1,5 +1,7 @@
 {
   "values": [
-    "#minecraft:logs"
+    "#carbonize:wooden_stacks",
+    "#minecraft:logs",
+    "#minecraft:planks"
   ]
 }

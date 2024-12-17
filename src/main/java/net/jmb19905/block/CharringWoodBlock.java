@@ -7,9 +7,15 @@ import net.minecraft.block.*;
 import net.minecraft.block.entity.BlockEntity;
 import net.minecraft.block.entity.BlockEntityTicker;
 import net.minecraft.block.entity.BlockEntityType;
+import net.minecraft.enchantment.EnchantmentHelper;
+import net.minecraft.entity.Entity;
+import net.minecraft.entity.LivingEntity;
 import net.minecraft.particle.ParticleTypes;
 import net.minecraft.sound.SoundCategory;
 import net.minecraft.sound.SoundEvents;
+import net.minecraft.state.StateManager;
+import net.minecraft.state.property.EnumProperty;
+import net.minecraft.util.StringIdentifiable;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Direction;
 import net.minecraft.util.math.random.Random;
@@ -21,11 +27,22 @@ import org.jetbrains.annotations.Nullable;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
+import java.util.function.Function;
+import java.util.function.Supplier;
+
+import static net.jmb19905.block.CharringWoodBlock.Stage.*;
 
 public class CharringWoodBlock extends BlockWithEntity {
+    public static final EnumProperty<Stage> STAGE = EnumProperty.of("stage", Stage.class);
 
     public CharringWoodBlock(Settings settings) {
         super(settings);
+        this.setDefaultState(this.stateManager.getDefaultState().with(STAGE, IGNITING));
+    }
+
+    @Override
+    protected void appendProperties(StateManager.Builder<Block, BlockState> builder) {
+        builder.add(STAGE);
     }
 
     @Nullable
@@ -39,45 +56,43 @@ public class CharringWoodBlock extends BlockWithEntity {
         return BlockRenderType.MODEL;
     }
 
+
     @Override
     public boolean isTransparent(BlockState state, BlockView world, BlockPos pos) {
-        return getEntity(world, pos)
-                .map(CharringWoodBlockEntity::getModel)
-                .map(model -> model.isTransparent(world, pos))
-                .orElseGet(() -> super.isTransparent(state, world, pos));
+        return proxy(getEntity(world, pos), (pState) -> pState.isTransparent(world, pos), () -> super.isTransparent(state, world, pos));
     }
 
     @SuppressWarnings("deprecation")
     @Override
     public VoxelShape getCullingShape(BlockState state, BlockView world, BlockPos pos) {
-        return getEntity(world, pos)
-                .map(CharringWoodBlockEntity::getModel)
-                .map(model -> model.getCullingShape(world, pos))
-                .orElseGet(() -> super.getCullingShape(state, world, pos));
+        return proxy(getEntity(world, pos), (pState) -> pState.getCullingShape(world, pos), () -> super.getCullingShape(state, world, pos));
     }
 
     @SuppressWarnings("deprecation")
     @Override
     public VoxelShape getOutlineShape(BlockState state, BlockView world, BlockPos pos, ShapeContext context) {
-        return getEntity(world, pos)
-                .map(CharringWoodBlockEntity::getModel)
-                .map(model -> model.getOutlineShape(world, pos, context))
-                .orElseGet(() -> super.getOutlineShape(state, world, pos, context));
+        return proxy(getEntity(world, pos), (pState) -> pState.getOutlineShape(world, pos, context), () -> super.getOutlineShape(state, world, pos, context));
     }
 
     @SuppressWarnings("deprecation")
     @Override
     public VoxelShape getCollisionShape(BlockState state, BlockView world, BlockPos pos, ShapeContext context) {
-        return getEntity(world, pos)
-                .map(CharringWoodBlockEntity::getModel)
-                .map(model -> model.getCollisionShape(world, pos, context))
-                .orElseGet(() -> super.getCollisionShape(state, world, pos, context));
+        return proxy(getEntity(world, pos), (pState) -> pState.getCollisionShape(world, pos, context), () -> super.getCollisionShape(state, world, pos, context));
     }
 
     @Nullable
     @Override
     public <T extends BlockEntity> BlockEntityTicker<T> getTicker(World world, BlockState state, BlockEntityType<T> type) {
         return checkType(type, Carbonize.CHARRING_WOOD_TYPE, CharringWoodBlockEntity::tick);
+    }
+
+    @Override
+    public void onSteppedOn(World world, BlockPos pos, BlockState state, Entity entity) {
+        if (!entity.bypassesSteppingEffects() && entity instanceof LivingEntity && !EnchantmentHelper.hasFrostWalker((LivingEntity)entity)) {
+            entity.damage(world.getDamageSources().hotFloor(), 0.5F);
+        }
+
+        super.onSteppedOn(world, pos, state, entity);
     }
 
     @Override
@@ -93,6 +108,7 @@ public class CharringWoodBlock extends BlockWithEntity {
             x = (double) pos.getX() + random.nextDouble();
             y = (double) pos.getY() + random.nextDouble() * 0.5 + 0.5;
             z = (double) pos.getZ() + random.nextDouble();
+            world.addParticle(ParticleTypes.FLAME, x, pos.getY() + random.nextDouble(), z, - 0.01 + random.nextFloat() / 50, random.nextFloat() / 50, - 0.01 + random.nextFloat() / 50);
             if (random.nextFloat() > 0.95f) {
                 world.addParticle(ParticleTypes.CAMPFIRE_COSY_SMOKE, x, y + 1, z, 0.0, 0.07, 0.0);
             } else {
@@ -104,6 +120,7 @@ public class CharringWoodBlock extends BlockWithEntity {
             x = (double)pos.getX() + random.nextDouble();
             y = (double)(pos.getY() + 1) - random.nextDouble() * (double)0.1f;
             z = (double)pos.getZ() + random.nextDouble();
+            world.addParticle(ParticleTypes.FLAME, x, pos.getY() + random.nextDouble(), z, - 0.01 + random.nextFloat() / 50, random.nextFloat() / 50, - 0.01 + random.nextFloat() / 50);
             if (random.nextFloat() > 0.95f) {
                 world.addParticle(ParticleTypes.CAMPFIRE_COSY_SMOKE, x, y + 1, z, 0.0, 0.07, 0.0);
             } else {
@@ -111,7 +128,6 @@ public class CharringWoodBlock extends BlockWithEntity {
             }
         }
     }
-
 
     private boolean isFlammable(BlockState state) {
         var entry = FlammableBlockRegistry.getDefaultInstance().get(state.getBlock());
@@ -149,5 +165,26 @@ public class CharringWoodBlock extends BlockWithEntity {
             i += a;
         }
         return i;
+    }
+
+    @SuppressWarnings("OptionalUsedAsFieldOrParameterType")
+    private  <T> T proxy(Optional<CharringWoodBlockEntity> entity, Function<BlockState, T> proxy, Supplier<T> def) {
+        if (entity.isPresent()) {
+            var medium = entity.get().getMedium();
+            if (medium != null && !medium.getBlock().equals(this))
+                return proxy.apply(medium);
+        }
+        return def.get();
+    }
+
+    public enum Stage implements StringIdentifiable {
+        IGNITING,
+        BURNING,
+        CHARRING;
+
+        @Override
+        public String asString() {
+            return this.name().toLowerCase();
+        }
     }
 }

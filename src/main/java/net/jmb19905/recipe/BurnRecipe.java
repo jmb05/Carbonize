@@ -15,17 +15,23 @@ import net.minecraft.world.World;
 public class BurnRecipe implements Recipe<SimpleInventory> {
 
     private final TagKey<Block> input;
+    private final Block medium;
     private final Block result;
     private final Identifier id;
 
-    public BurnRecipe(Identifier id, TagKey<Block> input, Block result) {
+    public BurnRecipe(Identifier id, TagKey<Block> input, Block medium, Block result) {
         this.input = input;
+        this.medium = medium;
         this.result = result;
         this.id = id;
     }
 
     public Block result() {
         return result;
+    }
+
+    public Block medium() {
+        return medium;
     }
 
     public TagKey<Block> input() {
@@ -65,5 +71,15 @@ public class BurnRecipe implements Recipe<SimpleInventory> {
     @Override
     public RecipeType<?> getType() {
         return Carbonize.BURN_RECIPE_TYPE;
+    }
+
+    @Override
+    public String toString() {
+        return  "BurnRecipe[" +
+                    "id=" + id + ", " +
+                    "input=" + input + ", " +
+                    "medium=" + medium + ", " +
+                    "result=" + result +
+                "]@" + hashCode();
     }
 }
