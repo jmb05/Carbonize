@@ -11,8 +11,8 @@ import net.minecraft.world.World;
 import net.minecraft.world.WorldAccess;
 
 @SuppressWarnings("deprecation")
-public class FlammableFallingBlock extends Block implements FlammableFaller {
-    public FlammableFallingBlock(Settings settings) {
+public class FlammableFallingStackBlock extends StackBlock implements FlammableFaller {
+    public FlammableFallingStackBlock(Settings settings) {
         super(settings);
     }
 

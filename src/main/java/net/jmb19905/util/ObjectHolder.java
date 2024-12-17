@@ -17,4 +17,8 @@ public class ObjectHolder <T> {
     public void updateValue(Function<T, T> mutator) {
         this.value = mutator.apply(this.value);
     }
+
+    public void setValue(T newValue) {
+        this.value = newValue;
+    }
 }
