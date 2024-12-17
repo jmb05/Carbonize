@@ -31,8 +31,22 @@
               "functions": [
                 {
                   "add": false,
-                  "count": 4.0,
+                  "count": 2.0,
                   "function": "minecraft:set_count"
+                },
+                {
+                  "conditions": [
+                    {
+                      "chance": 0.5,
+                      "condition": "minecraft:random_chance"
+                    }
+                  ],
+                  "enchantment": "minecraft:fortune",
+                  "formula": "minecraft:uniform_bonus_count",
+                  "function": "minecraft:apply_bonus",
+                  "parameters": {
+                    "bonusMultiplier": 1
+                  }
                 },
                 {
                   "function": "minecraft:explosion_decay"

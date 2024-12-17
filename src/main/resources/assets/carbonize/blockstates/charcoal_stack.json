@@ -1,0 +1,21 @@
+{
+  "variants": {
+    "": [
+      {
+        "model": "carbonize:block/charcoal_stack"
+      },
+      {
+        "model": "carbonize:block/charcoal_stack",
+        "y": 90
+      },
+      {
+        "model": "carbonize:block/charcoal_stack",
+        "y": 180
+      },
+      {
+        "model": "carbonize:block/charcoal_stack",
+        "y": 270
+      }
+    ]
+  }
+}

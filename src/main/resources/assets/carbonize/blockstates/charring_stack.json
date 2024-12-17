@@ -1,0 +1,21 @@
+{
+  "variants": {
+    "": [
+      {
+        "model": "carbonize:block/charring_stack"
+      },
+      {
+        "model": "carbonize:block/charring_stack",
+        "y": 90
+      },
+      {
+        "model": "carbonize:block/charring_stack",
+        "y": 180
+      },
+      {
+        "model": "carbonize:block/charring_stack",
+        "y": 270
+      }
+    ]
+  }
+}
