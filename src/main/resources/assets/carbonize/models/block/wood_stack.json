@@ -1,0 +1,6 @@
+{
+     "parent": "carbonize:block/raw_stack",
+     "textures": {
+       "texture": "minecraft:block/spruce_planks"
+     }
+   }

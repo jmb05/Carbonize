@@ -22,14 +22,13 @@
 		],
 		"fabric-datagen": [
           "net.jmb19905.datagen.CarbonizeDataGenerator"
+		],
+		"jade": [
+			"net.jmb19905.compat.CarbonizeJadeCompat"
 		]
 	},
 	"mixins": [
-		"carbonize.mixins.json",
-		{
-			"config": "carbonize.client.mixins.json",
-			"environment": "client"
-		}
+		"carbonize.mixins.json"
 	],
 	"depends": {
 		"fabricloader": ">=0.15.6",

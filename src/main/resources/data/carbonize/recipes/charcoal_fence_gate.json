@@ -1,0 +1,5 @@
+{
+  "type": "carbonize:burn",
+  "input": "minecraft:fence_gates",
+  "output": "carbonize:charcoal_fence_gate"
+}

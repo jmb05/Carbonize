@@ -15,6 +15,7 @@ public class CarbonizeConfigModel {
     @RestartRequired
     public boolean burnableContainers = false;
     public boolean charcoalPile = true;
+    public int charcoalPileMinimumCount = 8;
     public boolean burnCrafting = true;
     public boolean createAsh = true;
     public boolean increasedFireSpreadRange = true;

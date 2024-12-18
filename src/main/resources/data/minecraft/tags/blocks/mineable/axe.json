@@ -1,9 +1,8 @@
 {
   "replace": false,
   "values": [
-    "carbonize:charcoal_log",
-    "carbonize:charcoal_planks",
-    "carbonize:charcoal_stairs",
-    "carbonize:charcoal_slab"
+    "#carbonize:wooden_stacks",
+    "#carbonize:charring_blocks",
+    "#carbonize:charcoal_blocks"
   ]
 }

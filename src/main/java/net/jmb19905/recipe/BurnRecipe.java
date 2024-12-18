@@ -14,23 +14,37 @@ import net.minecraft.world.World;
 
 public class BurnRecipe implements Recipe<SimpleInventory> {
 
-    private final TagKey<Block> input;
-    private final Block result;
     private final Identifier id;
+    private final int burnTime;
+    private final TagKey<Block> input;
+    private final Block medium;
+    private final Block result;
 
-    public BurnRecipe(Identifier id, TagKey<Block> input, Block result) {
-        this.input = input;
-        this.result = result;
+
+    public BurnRecipe(Identifier id, int burnTime, TagKey<Block> input, Block medium, Block result) {
         this.id = id;
+        this.burnTime = burnTime;
+        this.input = input;
+        this.medium = medium;
+        this.result = result;
+    }
+
+    public int burnTime () {
+        return burnTime;
+    }
+
+    public TagKey<Block> input() {
+        return input;
+    }
+
+    public Block medium() {
+        return medium;
     }
 
     public Block result() {
         return result;
     }
 
-    public TagKey<Block> input() {
-        return input;
-    }
 
     @Override
     public boolean matches(SimpleInventory inventory, World world) {
@@ -65,5 +79,15 @@ public class BurnRecipe implements Recipe<SimpleInventory> {
     @Override
     public RecipeType<?> getType() {
         return Carbonize.BURN_RECIPE_TYPE;
+    }
+
+    @Override
+    public String toString() {
+        return  "BurnRecipe[" +
+                    "id=" + id + ", " +
+                    "input=" + input + ", " +
+                    "medium=" + medium + ", " +
+                    "result=" + result +
+                "]@" + hashCode();
     }
 }
