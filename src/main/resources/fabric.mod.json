@@ -22,6 +22,9 @@
 		],
 		"fabric-datagen": [
           "net.jmb19905.datagen.CarbonizeDataGenerator"
+		],
+		"jade": [
+			"net.jmb19905.compat.CarbonizeJadeCompat"
 		]
 	},
 	"mixins": [

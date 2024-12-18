@@ -32,7 +32,7 @@ import java.util.Optional;
 import java.util.function.Function;
 import java.util.function.Supplier;
 
-import static net.jmb19905.block.CharringWoodBlock.Stage.*;
+import static net.jmb19905.block.CharringWoodBlock.Stage.IGNITING;
 
 public class CharringWoodBlock extends BlockWithEntity {
     public static final EnumProperty<Stage> STAGE = EnumProperty.of("stage", Stage.class);

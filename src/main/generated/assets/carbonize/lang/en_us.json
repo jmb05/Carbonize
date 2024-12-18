@@ -9,12 +9,17 @@
   "block.carbonize.charcoal_slab": "Charcoal Slab",
   "block.carbonize.charcoal_stack": "Charcoal Stack",
   "block.carbonize.charcoal_stairs": "Charcoal Stairs",
+  "block.carbonize.charring_wood": "Charring Wood",
   "block.carbonize.wood_stack": "Wood Stack",
+  "config.jade.carbonize.show_remaining_burn_time": "Show Remaining Time",
+  "config.jade.carbonize.show_stage": "Show Stage",
   "item.carbonize.ash": "Ash",
   "text.config.carbonize.option.burnCrafting": "Block Conversion by Burning",
   "text.config.carbonize.option.burnableContainers": "Flammable Containers",
   "text.config.carbonize.option.charcoalPile": "Charcoal Pile",
   "text.config.carbonize.option.charcoalPileMinimumCount": "Charcoal Pile Minimum Count",
   "text.config.carbonize.option.increasedFireSpreadRange": "Increased Fire Spread Range",
-  "text.config.carbonize.option.moreBurnableBlocks": "More Flammable Blocks"
+  "text.config.carbonize.option.moreBurnableBlocks": "More Flammable Blocks",
+  "text.jade.carbonize.charring_wood.remaining_burn_time": "Remaining Time: %d",
+  "text.jade.carbonize.charring_wood.stage": "Stage: %d"
 }

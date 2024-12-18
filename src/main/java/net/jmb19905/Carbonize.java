@@ -83,8 +83,8 @@ public class Carbonize implements ModInitializer {
 	public static final Block ASH_BLOCK = new FallingBlock(FabricBlockSettings.create()
 			.mapColor(MapColor.GRAY)
 			.sounds(BlockSoundGroup.SAND));
-	public static final Block CHARRING_WOOD = new CharringWoodBlock(FabricBlockSettings.create().nonOpaque().luminance(15));
-	public static final Block CHARRING_STACK = new StackBlock(FabricBlockSettings.create().nonOpaque().luminance(15));
+	public static final Block CHARRING_WOOD = new CharringWoodBlock(FabricBlockSettings.create().nonOpaque().luminance(15).sounds(BlockSoundGroup.WOOD).dropsNothing());
+	public static final Block CHARRING_STACK = new StackBlock(FabricBlockSettings.create().nonOpaque());
 	public static final Block CHARCOAL_BLOCK = new Block(FabricBlockSettings.copy(Blocks.COAL_BLOCK));
 
 	public static final BlockItem WOOD_STACK_ITEM = new BlockItem(WOOD_STACK, new FabricItemSettings());
@@ -98,6 +98,7 @@ public class Carbonize implements ModInitializer {
 
 	public static final BlockItem ASH_LAYER_ITEM = new BlockItem(ASH_LAYER, new FabricItemSettings());
 	public static final BlockItem ASH_BLOCK_ITEM = new BlockItem(ASH_BLOCK, new FabricItemSettings());
+	public static final BlockItem CHARRING_WOOD_ITEM = new BlockItem(CHARRING_WOOD, new FabricItemSettings());
 	public static final BlockItem CHARCOAL_BLOCK_ITEM = new BlockItem(CHARCOAL_BLOCK, new FabricItemSettings());
 
 	public static final Item ASH = new BoneMealItem(new FabricItemSettings());
@@ -146,6 +147,7 @@ public class Carbonize implements ModInitializer {
 
 		Registry.register(Registries.ITEM, new Identifier(MOD_ID, "ash_layer"), ASH_LAYER_ITEM);
 		Registry.register(Registries.ITEM, new Identifier(MOD_ID, "ash_block"), ASH_BLOCK_ITEM);
+		Registry.register(Registries.ITEM, new Identifier(MOD_ID, "charring_wood"), CHARRING_WOOD_ITEM);
 		Registry.register(Registries.ITEM, new Identifier(MOD_ID, "charcoal_block"), CHARCOAL_BLOCK_ITEM);
 
 		Registry.register(Registries.ITEM, new Identifier(MOD_ID, "ash"), ASH);
@@ -221,9 +223,9 @@ public class Carbonize implements ModInitializer {
 					BlockPos pos = hitResult.getBlockPos();
 					ObjectHolder<Integer> burnTimeAverage = new ObjectHolder<>(0);
 					int blockCount = CharringWoodBlock.checkValid(world, pos, hitResult.getSide(), burnTimeAverage);
-					burnTimeAverage.updateValue(i -> i / blockCount);
 					if (blockCount >= CONFIG.charcoalPileMinimumCount() && handleIgnition(stack, player, hand)) {
 						BlockState parentState = world.getBlockState(pos);
+						burnTimeAverage.updateValue(i -> i / blockCount);
 						world.playSound(null, pos, SoundEvents.ITEM_FIRECHARGE_USE, SoundCategory.BLOCKS, 2, 1);
 						world.setBlockState(pos, CHARRING_WOOD.getDefaultState().with(CharringWoodBlock.STAGE, CharringWoodBlock.Stage.IGNITING));
 						world.getBlockEntity(pos, CHARRING_WOOD_TYPE).ifPresent(blockEntity -> blockEntity.createData(blockCount, burnTimeAverage.getValue(), parentState));

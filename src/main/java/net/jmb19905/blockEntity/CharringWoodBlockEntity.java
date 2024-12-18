@@ -99,6 +99,10 @@ public class CharringWoodBlockEntity extends BlockEntity implements RenderDataBl
         };
     }
 
+    public int getRemainingBurnTime() {
+        return maxBurnTime - burnTime;
+    }
+
     @Nullable
     @Override
     public Packet<ClientPlayPacketListener> toUpdatePacket() {

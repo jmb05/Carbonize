@@ -13,6 +13,12 @@ base {
 repositories {
 	maven { url 'https://maven.wispforest.io' }
 	maven { url "https://maven.terraformersmc.com/releases/" }
+	maven {
+		url "https://www.cursemaven.com"
+		content {
+			includeGroup "curse.maven"
+		}
+	}
 }
 
 loom {
@@ -50,6 +56,7 @@ dependencies {
 
 	modImplementation "io.wispforest:owo-lib:${project.owo_version}"
     annotationProcessor "io.wispforest:owo-lib:${project.owo_version}"
+	modImplementation "curse.maven:jade-324717:${project.jade_version_id}"
 
 	modApi "com.terraformersmc:modmenu:7.1.0"
 }
