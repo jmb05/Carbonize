@@ -2,8 +2,7 @@ package net.jmb19905.util;
 
 import java.util.function.Function;
 
-public class ObjectHolder <T> {
-
+public class ObjectHolder<T> {
     private T value;
 
     public ObjectHolder(T def) {

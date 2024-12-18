@@ -3,6 +3,8 @@ package net.jmb19905.block;
 import net.fabricmc.fabric.api.registry.FlammableBlockRegistry;
 import net.jmb19905.Carbonize;
 import net.jmb19905.blockEntity.CharringWoodBlockEntity;
+import net.jmb19905.recipe.BurnRecipe;
+import net.jmb19905.util.ObjectHolder;
 import net.minecraft.block.*;
 import net.minecraft.block.entity.BlockEntity;
 import net.minecraft.block.entity.BlockEntityTicker;
@@ -139,17 +141,24 @@ public class CharringWoodBlock extends BlockWithEntity {
     }
 
 
-    public static int checkValid(World world, BlockPos pos, Direction direction) {
+    public static int checkValid(World world, BlockPos pos, Direction direction, ObjectHolder<Integer> burnTimeAverage) {
         List<BlockPos> alreadyChecked = new ArrayList<>();
+        List<BurnRecipe> recipes = world.getRecipeManager().listAllOfType(Carbonize.BURN_RECIPE_TYPE);
         alreadyChecked.add(pos.offset(direction));
-        return check(world, pos, alreadyChecked);
+        return check(world, pos, alreadyChecked, recipes, burnTimeAverage);
     }
 
-    private static int check(World world, BlockPos pos, List<BlockPos> alreadyChecked) {
+    private static int check(World world, BlockPos pos, List<BlockPos> alreadyChecked, List<BurnRecipe> recipes, ObjectHolder<Integer> burnTimeAverage) {
         alreadyChecked.add(pos);
         BlockState state = world.getBlockState(pos);
         if (!state.isIn(Carbonize.CHARCOAL_PILE_VALID_FUEL)) return 0;
         int i = 1;
+        for (var burnRecipe : recipes) {
+            if (state.isIn(burnRecipe.input())) {
+                burnTimeAverage.updateValue(deviation -> deviation + burnRecipe.burnTime());
+                break;
+            }
+        }
         for (Direction dir : Direction.values()) {
             BlockPos side = pos.offset(dir);
             if (alreadyChecked.contains(side)) continue;
@@ -158,7 +167,7 @@ public class CharringWoodBlock extends BlockWithEntity {
                 alreadyChecked.add(side);
                 continue;
             }
-            int a = check(world, side, alreadyChecked);
+            int a = check(world, side, alreadyChecked, recipes, burnTimeAverage);
             if (a == 0) {
                 return 0;
             }

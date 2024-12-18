@@ -34,7 +34,7 @@ import static net.jmb19905.block.CharringWoodBlock.Stage.IGNITING;
 
 public class CharringWoodBlockEntity extends BlockEntity implements RenderDataBlockEntity {
     private static final Map<Direction, BooleanProperty> DIRECTION_PROPERTIES = ConnectingBlock.FACING_PROPERTIES.entrySet().stream().filter(entry -> entry.getKey() != Direction.DOWN).collect(Util.toMap());
-    private static final int SINGLE_BURN_TIME = 200;
+    public static final int SINGLE_BURN_TIME = 200;
     private BlockState parentState;
     private BlockState mediumState;
     private BlockState finalState;
@@ -49,8 +49,8 @@ public class CharringWoodBlockEntity extends BlockEntity implements RenderDataBl
         finalState = Carbonize.CHARCOAL_PLANKS.getDefaultState();
     }
 
-    public void createData(int blockCount, BlockState parentState) {
-        this.maxBurnTime = (int) (4 * Math.cbrt(blockCount) * SINGLE_BURN_TIME);
+    public void createData(int blockCount, int burnTimeAverage, BlockState parentState) {
+        this.maxBurnTime = (int) (4 * Math.cbrt(blockCount) * burnTimeAverage);
         updateModel(parentState);
     }
 
@@ -68,7 +68,7 @@ public class CharringWoodBlockEntity extends BlockEntity implements RenderDataBl
         world.getRecipeManager().listAllOfType(Carbonize.BURN_RECIPE_TYPE).forEach(burnRecipe -> {
             if (parent.isIn(burnRecipe.input())) {
                 this.parentState = parent;
-                this.mediumState = burnRecipe.medium() != null ? BlockHelper.transferState(burnRecipe.medium().getDefaultState(), parent) : current;
+                this.mediumState = BlockHelper.transferState(burnRecipe.medium().getDefaultState(), parent);
                 this.finalState = BlockHelper.transferState(burnRecipe.result().getDefaultState(), parent);
             }
         });

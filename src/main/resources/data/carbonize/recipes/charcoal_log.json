@@ -1,5 +1,6 @@
 {
   "type": "carbonize:burn",
+  "burnTime": "250",
   "input": "minecraft:logs",
   "output": "carbonize:charcoal_log"
 }

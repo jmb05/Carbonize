@@ -13,6 +13,7 @@ import net.jmb19905.blockEntity.CharringWoodBlockEntity;
 import net.jmb19905.config.CarbonizeConfig;
 import net.jmb19905.recipe.BurnRecipe;
 import net.jmb19905.recipe.BurnRecipeSerializer;
+import net.jmb19905.util.ObjectHolder;
 import net.minecraft.block.*;
 import net.minecraft.block.entity.BlockEntityType;
 import net.minecraft.block.enums.Instrument;
@@ -218,12 +219,14 @@ public class Carbonize implements ModInitializer {
 			if (!world.isClient && stack.isIn(IGNITERS) && player.isSneaking()) {
 				if (hitResult.getType() == HitResult.Type.BLOCK) {
 					BlockPos pos = hitResult.getBlockPos();
-					int blockCount = CharringWoodBlock.checkValid(world, pos, hitResult.getSide());
+					ObjectHolder<Integer> burnTimeAverage = new ObjectHolder<>(0);
+					int blockCount = CharringWoodBlock.checkValid(world, pos, hitResult.getSide(), burnTimeAverage);
+					burnTimeAverage.updateValue(i -> i / blockCount);
 					if (blockCount >= CONFIG.charcoalPileMinimumCount() && handleIgnition(stack, player, hand)) {
 						BlockState parentState = world.getBlockState(pos);
 						world.playSound(null, pos, SoundEvents.ITEM_FIRECHARGE_USE, SoundCategory.BLOCKS, 2, 1);
 						world.setBlockState(pos, CHARRING_WOOD.getDefaultState().with(CharringWoodBlock.STAGE, CharringWoodBlock.Stage.IGNITING));
-						world.getBlockEntity(pos, CHARRING_WOOD_TYPE).ifPresent(blockEntity -> blockEntity.createData(blockCount, parentState));
+						world.getBlockEntity(pos, CHARRING_WOOD_TYPE).ifPresent(blockEntity -> blockEntity.createData(blockCount, burnTimeAverage.getValue(), parentState));
 						return ActionResult.CONSUME;
 					}
 				}

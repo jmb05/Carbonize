@@ -11,7 +11,7 @@ public class BlockHelper {
         return to.withIfExists(property, from.get(property));
     }
 
-    public static <T extends Comparable<T>> BlockState transferState(BlockState parent, BlockState child) {
+    public static BlockState transferState(BlockState parent, BlockState child) {
         var stateHolder = new ObjectHolder<>(parent);
         child.getProperties().forEach(value -> stateHolder.updateValue(oldState -> transferStateProperty(child, oldState, value)));
         return stateHolder.getValue();

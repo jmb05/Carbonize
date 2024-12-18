@@ -1,5 +1,6 @@
 {
   "type": "carbonize:burn",
+  "burnTime": "300",
   "input": "carbonize:wooden_stacks",
   "medium": "carbonize:charring_stack",
   "output": "carbonize:charcoal_stack"
