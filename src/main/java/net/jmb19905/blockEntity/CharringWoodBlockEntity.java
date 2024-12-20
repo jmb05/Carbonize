@@ -32,6 +32,7 @@ import static net.jmb19905.block.CharringWoodBlock.Stage.IGNITING;
 public class CharringWoodBlockEntity extends BlockEntity implements RenderDataBlockEntity {
     private static final Map<Direction, BooleanProperty> DIRECTION_PROPERTIES = ConnectingBlock.FACING_PROPERTIES.entrySet().stream().filter(entry -> entry.getKey() != Direction.DOWN).collect(Util.toMap());
     private static final BlockState FIRE_STATE = Blocks.FIRE.getDefaultState();
+    private static final CharcoalPitMultiblock DUMMY_DATA = CharcoalPitMultiblock.def(World.OVERWORLD, new BlockPos(0, 0, 0));
     public static final int SINGLE_BURN_TIME = 200;
     private List<BurnRecipe> recipeCache;
     private GlobalCharcoalPits globalDataCache;
@@ -52,7 +53,7 @@ public class CharringWoodBlockEntity extends BlockEntity implements RenderDataBl
     }
 
     public CharcoalPitMultiblock getDataSafely() {
-        return dataCache == null ? CharcoalPitMultiblock.def(World.OVERWORLD, pos) : dataCache;
+        return dataCache == null ? DUMMY_DATA : dataCache;
     }
 
     public void join(CharringWoodBlockEntity priorityEntity) {
@@ -166,7 +167,7 @@ public class CharringWoodBlockEntity extends BlockEntity implements RenderDataBl
 
         if (sideState.isIn(Carbonize.CHARCOAL_PILE_VALID_FUEL)) {
             var parent = world.getBlockState(sidePos);
-            world.setBlockState(sidePos, Carbonize.CHARRING_WOOD.getDefaultState());
+            world.setBlockState(sidePos, entity.getCachedState());
             world.getBlockEntity(sidePos, Carbonize.CHARRING_WOOD_TYPE).ifPresent(blockEntity -> {
                 blockEntity.sync(parent);
                 blockEntity.join(entity);
@@ -205,8 +206,7 @@ public class CharringWoodBlockEntity extends BlockEntity implements RenderDataBl
     public void update() {
         if (world == null) return;
         this.markDirty();
-        //getCharcoalPitData().queueUpdate();
+        getCharcoalPitData().queue();
         if(world instanceof ServerWorld serverWorld) serverWorld.getChunkManager().markForUpdate(pos);
-        this.world.updateListeners(this.getPos(), this.getCachedState(), this.getCachedState(), Block.NOTIFY_ALL);
     }
 }

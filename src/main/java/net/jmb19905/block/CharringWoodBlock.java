@@ -12,6 +12,7 @@ import net.minecraft.enchantment.EnchantmentHelper;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.LivingEntity;
 import net.minecraft.particle.ParticleTypes;
+import net.minecraft.server.world.ServerWorld;
 import net.minecraft.sound.SoundCategory;
 import net.minecraft.sound.SoundEvents;
 import net.minecraft.state.StateManager;
@@ -87,14 +88,11 @@ public class CharringWoodBlock extends BlockWithEntity {
         return checkType(type, Carbonize.CHARRING_WOOD_TYPE, CharringWoodBlockEntity::tick);
     }
 
-    /*
-        update the multiblock here
-         */
     @SuppressWarnings("deprecation")
     @Override
     public void neighborUpdate(BlockState state, World world, BlockPos pos, Block sourceBlock, BlockPos sourcePos, boolean notify) {
-        //if (world instanceof ServerWorld serverWorld)
-            //serverWorld.getBlockEntity(pos, Carbonize.CHARRING_WOOD_TYPE).ifPresent(CharringWoodBlockEntity::update);
+        if (world instanceof ServerWorld serverWorld)
+            serverWorld.getBlockEntity(pos, Carbonize.CHARRING_WOOD_TYPE).ifPresent(CharringWoodBlockEntity::update);
         super.neighborUpdate(state, world, pos, sourceBlock, sourcePos, notify);
     }
 

@@ -10,6 +10,7 @@ import net.minecraft.server.world.ServerWorld;
 import net.minecraft.sound.SoundCategory;
 import net.minecraft.sound.SoundEvents;
 import net.minecraft.util.math.BlockPos;
+import net.minecraft.util.math.ChunkPos;
 import net.minecraft.world.World;
 
 import java.util.ArrayList;
@@ -23,6 +24,7 @@ public class CharcoalPitMultiblock {
     private boolean queued;
     public final RegistryKey<World> worldKey;
     public final List<BlockPosWrapper> blockPositions;
+    private final List<ChunkPos> chunkPositions;
     public int maxBurnTime;
     public int burnTime;
     public boolean extinguished;
@@ -31,6 +33,7 @@ public class CharcoalPitMultiblock {
         this.queued = false;
         this.worldKey = worldKey;
         this.blockPositions = new ArrayList<>();
+        this.chunkPositions = new ArrayList<>();
         this.maxBurnTime = maxBurnTime;
         this.burnTime = burnTime;
         this.extinguished = extinguished;
@@ -45,20 +48,17 @@ public class CharcoalPitMultiblock {
     public CharcoalPitMultiblock(RegistryKey<World> worldKey, BlockPos pos, int maxBurnTime, int burnTime, boolean extinguished) {
         this(worldKey, maxBurnTime, burnTime, extinguished);
         appendBlockPositions(new BlockPosWrapper(pos));
-
     }
 
     public void update(MinecraftServer server) {
         var world = server.getWorld(worldKey);
-
         if (burnTime >= maxBurnTime) {
             process(world, ctx -> ctx.world().setBlockState(ctx.pos(), ctx.entity().getFinal()));
-            if (!extinguished) {
+            if (!extinguished)
                 if (world != null && !blockPositions.isEmpty()) {
                     world.playSound(null, blockPositions.get(world.getRandom().nextInt(blockPositions.size())).expose(), SoundEvents.BLOCK_FIRE_EXTINGUISH, SoundCategory.BLOCKS, 2f, 1f);
                     extinguished = true;
                 }
-            }
         } else if (burnTime >= maxBurnTime * 2/3)
             update(world, CHARRING);
         else if (burnTime >= maxBurnTime / 3)
@@ -67,6 +67,11 @@ public class CharcoalPitMultiblock {
     }
 
     public void tick(MinecraftServer server) {
+        if (!chunkPositions.stream().allMatch(chunkPos -> {
+            var world = server.getWorld(worldKey);
+            return world != null && world.isChunkLoaded(chunkPos.x, chunkPos.z);
+        })) return;
+
         burnTime++;
 
         if (burnTime == maxBurnTime / 3)
@@ -76,12 +81,12 @@ public class CharcoalPitMultiblock {
         else if (burnTime >= maxBurnTime)
             update(server);
         else if (queued) {
-            //update(server);
+            update(server);
             queued = false;
-        }
+        } else if (blockPositions.size() == 1)
+            update(server);
     }
 
-    @SuppressWarnings("SuspiciousListRemoveInLoop")
     private void process(ServerWorld world, Consumer<CharcoalPitContext> consumer) {
         for (int i = 0; i < blockPositions.size(); i++) {
             var exposedPos = blockPositions.get(i).expose();
@@ -90,7 +95,7 @@ public class CharcoalPitMultiblock {
                 var entity = world.getBlockEntity(exposedPos, Carbonize.CHARRING_WOOD_TYPE);
                 consumer.accept(new CharcoalPitContext(world, exposedPos, state, entity.orElseThrow()));
             } else {
-                blockPositions.remove(i);
+                removePosition(i);
             }
         }
     }
@@ -113,7 +118,7 @@ public class CharcoalPitMultiblock {
 
     public void appendBlockPositions(BlockPosWrapper pos) {
         if (blockPositions.stream().noneMatch(blockPosition -> blockPosition.equals(pos)))
-            blockPositions.add(pos);
+            addPosition(pos);
     }
 
     public void appendBlockPositions(List<BlockPosWrapper> wrappers) {
@@ -134,7 +139,7 @@ public class CharcoalPitMultiblock {
         if (obj == null) return false;
         if (super.equals(obj)) return true;
         if (obj instanceof CharcoalPitMultiblock data) {
-            return  //this.worldKey.getValue().equals(data.worldKey.getValue()) &&
+            return  this.worldKey.getValue().equals(data.worldKey.getValue()) &&
                     this.blockPositions.equals(data.blockPositions) &&
                     this.maxBurnTime == data.maxBurnTime &&
                     this.burnTime == data.burnTime &&
@@ -149,6 +154,21 @@ public class CharcoalPitMultiblock {
             if (!ctx.state().get(STAGE).equals(stage))
                 ctx.entity().sync(ctx.entity().getParent(), ctx.state().with(STAGE, stage));
         });
+    }
+
+    private void addPosition(BlockPosWrapper pos) {
+        var chunkPos = new ChunkPos(pos.expose());
+        if (chunkPositions.stream().noneMatch(chunkPosition -> chunkPosition.equals(chunkPos)))
+            chunkPositions.add(chunkPos);
+        blockPositions.add(pos);
+
+    }
+
+    private void removePosition(int index) {
+        var chunkPos = new ChunkPos(blockPositions.get(index).expose());
+        blockPositions.remove(index);
+        if (blockPositions.stream().noneMatch(pos -> chunkPos.equals(new ChunkPos(pos.expose()))))
+            chunkPositions.remove(chunkPos);
     }
 
     public static CharcoalPitMultiblock def(RegistryKey<World> world, BlockPos pos) {

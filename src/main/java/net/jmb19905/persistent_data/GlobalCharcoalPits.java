@@ -56,7 +56,10 @@ public class GlobalCharcoalPits extends PersistentState {
     }
 
     public void merge(BlockPos priorityPos, BlockPos subPos) {
-        get(priorityPos).incorp(get(subPos));
+        var priorityData = get(priorityPos);
+        var subData = get(subPos);
+        if (priorityData != null && subData != null)
+            priorityData.incorp(subData);
     }
 
     public boolean exists(BlockPos pos) {
