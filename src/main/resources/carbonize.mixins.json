@@ -6,6 +6,7 @@
     "FallingBlockEntityMixin",
     "FenceMixin",
     "FireMixin",
+    "IFireAccess",
     "StairsBlockMixin"
   ],
   "injectors": {

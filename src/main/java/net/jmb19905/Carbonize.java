@@ -1,6 +1,7 @@
 package net.jmb19905;
 
 import net.fabricmc.api.ModInitializer;
+import net.fabricmc.fabric.api.event.lifecycle.v1.ServerTickEvents;
 import net.fabricmc.fabric.api.event.player.UseBlockCallback;
 import net.fabricmc.fabric.api.item.v1.FabricItemSettings;
 import net.fabricmc.fabric.api.itemgroup.v1.ItemGroupEvents;
@@ -11,9 +12,9 @@ import net.fabricmc.fabric.api.registry.FuelRegistry;
 import net.jmb19905.block.*;
 import net.jmb19905.blockEntity.CharringWoodBlockEntity;
 import net.jmb19905.config.CarbonizeConfig;
+import net.jmb19905.persistent_data.GlobalCharcoalPits;
 import net.jmb19905.recipe.BurnRecipe;
 import net.jmb19905.recipe.BurnRecipeSerializer;
-import net.jmb19905.util.ObjectHolder;
 import net.minecraft.block.*;
 import net.minecraft.block.entity.BlockEntityType;
 import net.minecraft.block.enums.Instrument;
@@ -214,6 +215,7 @@ public class Carbonize implements ModInitializer {
 		});
 
 		ItemGroupEvents.modifyEntriesEvent(ItemGroups.INGREDIENTS).register(content -> content.add(ASH));
+		ServerTickEvents.START_SERVER_TICK.register(server -> GlobalCharcoalPits.getServerState(server).tick(server));
 
 		UseBlockCallback.EVENT.register((player, world, hand, hitResult) -> {
 			if (!CONFIG.charcoalPile()) return ActionResult.PASS;
@@ -221,14 +223,12 @@ public class Carbonize implements ModInitializer {
 			if (!world.isClient && stack.isIn(IGNITERS) && player.isSneaking()) {
 				if (hitResult.getType() == HitResult.Type.BLOCK) {
 					BlockPos pos = hitResult.getBlockPos();
-					ObjectHolder<Integer> burnTimeAverage = new ObjectHolder<>(0);
-					int blockCount = CharringWoodBlock.checkValid(world, pos, hitResult.getSide(), burnTimeAverage);
+					int blockCount = CharringWoodBlock.checkValid(world, pos, hitResult.getSide());
 					if (blockCount >= CONFIG.charcoalPileMinimumCount() && handleIgnition(stack, player, hand)) {
 						BlockState parentState = world.getBlockState(pos);
-						burnTimeAverage.updateValue(i -> i / blockCount);
 						world.playSound(null, pos, SoundEvents.ITEM_FIRECHARGE_USE, SoundCategory.BLOCKS, 2, 1);
 						world.setBlockState(pos, CHARRING_WOOD.getDefaultState().with(CharringWoodBlock.STAGE, CharringWoodBlock.Stage.IGNITING));
-						world.getBlockEntity(pos, CHARRING_WOOD_TYPE).ifPresent(blockEntity -> blockEntity.createData(blockCount, burnTimeAverage.getValue(), parentState));
+						world.getBlockEntity(pos, CHARRING_WOOD_TYPE).ifPresent(blockEntity -> blockEntity.sync(parentState));
 						return ActionResult.CONSUME;
 					}
 				}

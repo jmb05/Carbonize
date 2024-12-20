@@ -12,6 +12,7 @@
   "block.carbonize.charring_wood": "Charring Wood",
   "block.carbonize.wood_stack": "Wood Stack",
   "config.jade.carbonize.show_remaining_burn_time": "Show Remaining Time",
+  "config.jade.carbonize.show_size": "Show Size",
   "config.jade.carbonize.show_stage": "Show Stage",
   "item.carbonize.ash": "Ash",
   "text.config.carbonize.option.burnCrafting": "Block Conversion by Burning",
@@ -21,5 +22,6 @@
   "text.config.carbonize.option.increasedFireSpreadRange": "Increased Fire Spread Range",
   "text.config.carbonize.option.moreBurnableBlocks": "More Flammable Blocks",
   "text.jade.carbonize.charring_wood.remaining_burn_time": "Remaining Time: %d",
+  "text.jade.carbonize.charring_wood.size": "Size: %d",
   "text.jade.carbonize.charring_wood.stage": "Stage: %d"
 }

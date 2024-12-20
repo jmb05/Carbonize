@@ -30,6 +30,8 @@ public class CarbonizeJadeCompat implements IWailaPlugin, IBlockComponentProvide
     public void appendTooltip(ITooltip tooltip, BlockAccessor accessor, IPluginConfig config) {
         if (accessor.getBlock() instanceof CharringWoodBlock) {
             var data = accessor.getServerData();
+            if (config.get(SHOW_SIZE))
+                tooltip.add(Text.translatable("text.jade.carbonize.charring_wood.size", data.getInt("Size")));
             if (config.get(SHOW_STAGE))
                 tooltip.add(Text.translatable("text.jade.carbonize.charring_wood.stage", data.getString("Stage")));
             if (config.get(SHOW_REMAINING_BURN_TIME))
@@ -50,8 +52,10 @@ public class CarbonizeJadeCompat implements IWailaPlugin, IBlockComponentProvide
     @Override
     public void appendServerData(NbtCompound nbtCompound, BlockAccessor accessor) {
         if (accessor.getBlock() instanceof CharringWoodBlock) {
+            var entity = (CharringWoodBlockEntity) accessor.getBlockEntity();
+            nbtCompound.putInt("Size", entity.getBlockCount());
             nbtCompound.putString("Stage", accessor.getBlockState().get(CharringWoodBlock.STAGE).name().toUpperCase());
-            nbtCompound.putInt("RemainingBurnTime", ((CharringWoodBlockEntity) accessor.getBlockEntity()).getRemainingBurnTime());
+            nbtCompound.putInt("RemainingBurnTime", entity.getRemainingBurnTime());
         }
     }
 }

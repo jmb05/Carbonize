@@ -33,8 +33,10 @@ public class CarbonizeLanguageDataGen extends FabricLanguageProvider {
         translationBuilder.add("text.config.carbonize.option.charcoalPileMinimumCount", "Charcoal Pile Minimum Count");
         translationBuilder.add("text.config.carbonize.option.burnCrafting", "Block Conversion by Burning");
         translationBuilder.add("text.config.carbonize.option.increasedFireSpreadRange", "Increased Fire Spread Range");
+        translationBuilder.add("text.jade.carbonize.charring_wood.size", "Size: %d");
         translationBuilder.add("text.jade.carbonize.charring_wood.stage", "Stage: %d");
         translationBuilder.add("text.jade.carbonize.charring_wood.remaining_burn_time", "Remaining Time: %d");
+        translationBuilder.add("config.jade.carbonize.show_size", "Show Size");
         translationBuilder.add("config.jade.carbonize.show_stage", "Show Stage");
         translationBuilder.add("config.jade.carbonize.show_remaining_burn_time", "Show Remaining Time");
 
