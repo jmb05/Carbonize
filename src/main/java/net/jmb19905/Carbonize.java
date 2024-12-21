@@ -12,7 +12,7 @@ import net.fabricmc.fabric.api.registry.FuelRegistry;
 import net.jmb19905.block.*;
 import net.jmb19905.blockEntity.CharringWoodBlockEntity;
 import net.jmb19905.config.CarbonizeConfig;
-import net.jmb19905.persistent_data.GlobalCharcoalPits;
+import net.jmb19905.persistent_data.CharcoalPitManager;
 import net.jmb19905.recipe.BurnRecipe;
 import net.jmb19905.recipe.BurnRecipeSerializer;
 import net.minecraft.block.*;
@@ -114,7 +114,6 @@ public class Carbonize implements ModInitializer {
 	public static final RecipeType<BurnRecipe> BURN_RECIPE_TYPE = registerRecipeType(BurnRecipeSerializer.ID);
 
 	public static final TagKey<Block> CHARCOAL_BLOCKS = TagKey.of(RegistryKeys.BLOCK, new Identifier(MOD_ID, "charcoal_blocks"));
-	public static final TagKey<Block> CHARCOAL_PILE_VALID_WALL = TagKey.of(RegistryKeys.BLOCK, new Identifier(MOD_ID, "charcoal_pile_valid_wall"));
 	public static final TagKey<Block> CHARCOAL_PILE_VALID_FUEL = TagKey.of(RegistryKeys.BLOCK, new Identifier(MOD_ID, "charcoal_pile_valid_fuel"));
 	public static final TagKey<Item> DAMAGE_IGNITERS = TagKey.of(RegistryKeys.ITEM, new Identifier(MOD_ID, "damage_igniters"));
 	public static final TagKey<Item> CONSUME_IGNITERS = TagKey.of(RegistryKeys.ITEM, new Identifier(MOD_ID, "consume_igniters"));
@@ -215,7 +214,7 @@ public class Carbonize implements ModInitializer {
 		});
 
 		ItemGroupEvents.modifyEntriesEvent(ItemGroups.INGREDIENTS).register(content -> content.add(ASH));
-		ServerTickEvents.START_SERVER_TICK.register(server -> GlobalCharcoalPits.getServerState(server).tick(server));
+		ServerTickEvents.START_SERVER_TICK.register(server -> CharcoalPitManager.getServerState(server).tick(server));
 
 		UseBlockCallback.EVENT.register((player, world, hand, hitResult) -> {
 			if (!CONFIG.charcoalPile()) return ActionResult.PASS;
@@ -227,7 +226,7 @@ public class Carbonize implements ModInitializer {
 					if (blockCount >= CONFIG.charcoalPileMinimumCount() && handleIgnition(stack, player, hand)) {
 						BlockState parentState = world.getBlockState(pos);
 						world.playSound(null, pos, SoundEvents.ITEM_FIRECHARGE_USE, SoundCategory.BLOCKS, 2, 1);
-						world.setBlockState(pos, CHARRING_WOOD.getDefaultState().with(CharringWoodBlock.STAGE, CharringWoodBlock.Stage.IGNITING));
+						world.setBlockState(pos, CHARRING_WOOD.getDefaultState());
 						world.getBlockEntity(pos, CHARRING_WOOD_TYPE).ifPresent(blockEntity -> blockEntity.sync(parentState));
 						return ActionResult.CONSUME;
 					}

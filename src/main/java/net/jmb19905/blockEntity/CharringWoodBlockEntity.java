@@ -2,11 +2,13 @@ package net.jmb19905.blockEntity;
 
 import net.fabricmc.fabric.api.blockview.v2.RenderDataBlockEntity;
 import net.jmb19905.Carbonize;
-import net.jmb19905.persistent_data.GlobalCharcoalPits;
+import net.jmb19905.persistent_data.CharcoalPitManager;
 import net.jmb19905.persistent_data.CharcoalPitMultiblock;
 import net.jmb19905.recipe.BurnRecipe;
 import net.jmb19905.util.BlockHelper;
-import net.minecraft.block.*;
+import net.minecraft.block.Block;
+import net.minecraft.block.BlockState;
+import net.minecraft.block.Blocks;
 import net.minecraft.block.entity.BlockEntity;
 import net.minecraft.nbt.NbtCompound;
 import net.minecraft.nbt.NbtHelper;
@@ -14,28 +16,24 @@ import net.minecraft.network.listener.ClientPlayPacketListener;
 import net.minecraft.network.packet.Packet;
 import net.minecraft.network.packet.s2c.play.BlockEntityUpdateS2CPacket;
 import net.minecraft.registry.Registries;
-import net.minecraft.registry.tag.BlockTags;
 import net.minecraft.server.world.ServerWorld;
-import net.minecraft.state.property.BooleanProperty;
-import net.minecraft.util.Util;
 import net.minecraft.util.math.BlockPos;
-import net.minecraft.util.math.Direction;
 import net.minecraft.world.World;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.List;
-import java.util.Map;
 
 import static net.jmb19905.block.CharringWoodBlock.STAGE;
-import static net.jmb19905.block.CharringWoodBlock.Stage.IGNITING;
 
+/**
+ * This class has no inherent functionality. Its job is purely just to sync itself with {@link CharcoalPitManager} by attempting
+ * to upload its position data every tick. All the previous functionality that was in here was migrated to {@link CharcoalPitManager}.
+ * However, the functionality has been modified with certain optimisations and fixes that are not possible when handled individually.
+ */
 public class CharringWoodBlockEntity extends BlockEntity implements RenderDataBlockEntity {
-    private static final Map<Direction, BooleanProperty> DIRECTION_PROPERTIES = ConnectingBlock.FACING_PROPERTIES.entrySet().stream().filter(entry -> entry.getKey() != Direction.DOWN).collect(Util.toMap());
-    private static final BlockState FIRE_STATE = Blocks.FIRE.getDefaultState();
     private static final CharcoalPitMultiblock DUMMY_DATA = CharcoalPitMultiblock.def(World.OVERWORLD, new BlockPos(0, 0, 0));
-    public static final int SINGLE_BURN_TIME = 200;
     private List<BurnRecipe> recipeCache;
-    private GlobalCharcoalPits globalDataCache;
+    private CharcoalPitManager globalDataCache;
     private CharcoalPitMultiblock dataCache;
     private BlockState parentState;
     private BlockState mediumState;
@@ -52,18 +50,23 @@ public class CharringWoodBlockEntity extends BlockEntity implements RenderDataBl
 
     }
 
+    public static void tick(World world, BlockPos pos, BlockState ignoredState, BlockEntity blockEntity) {
+        CharringWoodBlockEntity entity = (CharringWoodBlockEntity) blockEntity;
+        if (world instanceof ServerWorld serverWorld) {
+            if (entity.dataCache == null) {
+                if (entity.getCharcoalPitData().exists(serverWorld, pos))
+                    entity.dataCache = entity.getCharcoalPitData().get(serverWorld, pos);
+                else entity.sync(entity.getParent());
+            } else if (entity.dataCache.isOutdated()) {
+                if (entity.getCharcoalPitData().exists(serverWorld, pos))
+                    entity.dataCache = entity.getCharcoalPitData().get(serverWorld, pos);
+                else entity.sync(entity.getParent());
+            }
+        }
+    }
+
     public CharcoalPitMultiblock getDataSafely() {
         return dataCache == null ? DUMMY_DATA : dataCache;
-    }
-
-    public void join(CharringWoodBlockEntity priorityEntity) {
-        getCharcoalPitData().merge(priorityEntity.pos, this.pos);
-    }
-
-    public void sync(BlockState parent, BlockState current) {
-        sync(parent);
-        assert world != null;
-        world.setBlockState(pos, current);
     }
 
     public void sync(BlockState parent) {
@@ -76,7 +79,14 @@ public class CharringWoodBlockEntity extends BlockEntity implements RenderDataBl
                     this.mediumState = BlockHelper.transferState(burnRecipe.medium().getDefaultState(), parent);
                     this.finalState = BlockHelper.transferState(burnRecipe.result().getDefaultState(), parent);
                     if (dataCache == null)
-                        getCharcoalPitData().add(new CharcoalPitMultiblock(getServerWorld().getRegistryKey(), pos, burnRecipe.burnTime(), 0, false));
+                        getCharcoalPitData().add(charcoalPitManager ->  new CharcoalPitMultiblock(
+                                charcoalPitManager,
+                                getServerWorld().getRegistryKey(),
+                                pos,
+                                burnRecipe.burnTime(),
+                                0,
+                                false
+                        ));
                     break;
                 }
             update();
@@ -135,6 +145,9 @@ public class CharringWoodBlockEntity extends BlockEntity implements RenderDataBl
         nbt.put("ParentState", NbtHelper.fromBlockState(parentState));
         nbt.put("MediumState", NbtHelper.fromBlockState(mediumState));
         nbt.put("FinalState", NbtHelper.fromBlockState(finalState));
+
+        if (globalDataCache != null)
+            globalDataCache.markDirty();
     }
 
     @Override
@@ -144,57 +157,10 @@ public class CharringWoodBlockEntity extends BlockEntity implements RenderDataBl
         this.finalState = NbtHelper.toBlockState(Registries.BLOCK.getReadOnlyWrapper(), nbt.getCompound("FinalState"));
     }
 
-    public static void tick(World world, BlockPos pos, BlockState state, BlockEntity blockEntity) {
-        CharringWoodBlockEntity entity = (CharringWoodBlockEntity) blockEntity;
-        if (world instanceof ServerWorld serverWorld) {
-            for (Direction dir : Direction.values())
-                lightSide(serverWorld, pos, dir, entity);
-
-            if (entity.dataCache == null && entity.getCharcoalPitData().exists(pos))
-                entity.dataCache = entity.getCharcoalPitData().get(pos);
-        }
-    }
-
-
-
-    private static void lightSide(ServerWorld world, BlockPos pos, Direction dir, CharringWoodBlockEntity entity) {
-        var sidePos = pos.offset(dir);
-        var sideState = world.getBlockState(sidePos);
-
-        if (sideState.isIn(Carbonize.CHARCOAL_PILE_VALID_WALL)) return;
-
-        if (BlockHelper.isNonFlammableFullCube(world, pos, sideState)) return;
-
-        if (sideState.isIn(Carbonize.CHARCOAL_PILE_VALID_FUEL)) {
-            var parent = world.getBlockState(sidePos);
-            world.setBlockState(sidePos, entity.getCachedState());
-            world.getBlockEntity(sidePos, Carbonize.CHARRING_WOOD_TYPE).ifPresent(blockEntity -> {
-                blockEntity.sync(parent);
-                blockEntity.join(entity);
-            });
-        } else if (entity.getCachedState().get(STAGE).ordinal() > IGNITING.ordinal()) {
-            if (sideState.isReplaceable() || sideState.isAir()) {
-                BlockState fireState;
-                if (dir != Direction.UP)
-                    fireState = FIRE_STATE.with(DIRECTION_PROPERTIES.get(dir.getOpposite()), true);
-                else fireState = FIRE_STATE;
-                //world.setBlockState(sidePos, fireState);
-            } else if (world.getRandom().nextInt(SINGLE_BURN_TIME) == 0) {
-                if (sideState.isOf(Blocks.TNT)) {
-                    TntBlock.primeTnt(world, sidePos);
-                    world.setBlockState(pos, Blocks.AIR.getDefaultState());
-                } else if (!sideState.isFullCube(world, pos) && !sideState.isIn(BlockTags.FIRE)) {
-                    //world.breakBlock(pos, false);
-                    //world.setBlockState(pos, FIRE_STATE);
-                }
-            }
-        }
-    }
-
-    private GlobalCharcoalPits getCharcoalPitData() {
+    private CharcoalPitManager getCharcoalPitData() {
         assert getServerWorld() != null;
         if (globalDataCache == null)
-            globalDataCache = GlobalCharcoalPits.getServerState(getServerWorld());
+            globalDataCache = CharcoalPitManager.getServerState(getServerWorld());
         else globalDataCache.markDirty();
         return globalDataCache;
     }
@@ -204,9 +170,13 @@ public class CharringWoodBlockEntity extends BlockEntity implements RenderDataBl
     }
 
     public void update() {
-        if (world == null) return;
-        this.markDirty();
-        getCharcoalPitData().queue();
-        if(world instanceof ServerWorld serverWorld) serverWorld.getChunkManager().markForUpdate(pos);
+        if (world != null) {
+            if (world instanceof ServerWorld serverWorld) {
+                serverWorld.getChunkManager().markForUpdate(pos);
+                getCharcoalPitData().queue();
+            }
+            this.markDirty();
+            this.world.updateListeners(pos, this.getCachedState(), this.getCachedState(), Block.NOTIFY_ALL);
+        }
     }
 }
