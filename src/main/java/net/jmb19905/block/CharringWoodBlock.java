@@ -16,6 +16,7 @@ import net.minecraft.server.world.ServerWorld;
 import net.minecraft.sound.SoundCategory;
 import net.minecraft.sound.SoundEvents;
 import net.minecraft.state.StateManager;
+import net.minecraft.state.property.BooleanProperty;
 import net.minecraft.state.property.EnumProperty;
 import net.minecraft.util.StringIdentifiable;
 import net.minecraft.util.math.BlockPos;
@@ -36,15 +37,16 @@ import static net.jmb19905.block.CharringWoodBlock.Stage.IGNITING;
 
 public class CharringWoodBlock extends BlockWithEntity {
     public static final EnumProperty<Stage> STAGE = EnumProperty.of("stage", Stage.class);
+    public static final BooleanProperty SYNCED = BooleanProperty.of("synced");
 
     public CharringWoodBlock(Settings settings) {
         super(settings);
-        this.setDefaultState(this.stateManager.getDefaultState().with(STAGE, IGNITING));
+        this.setDefaultState(this.stateManager.getDefaultState().with(STAGE, IGNITING).with(SYNCED, false));
     }
 
     @Override
     protected void appendProperties(StateManager.Builder<Block, BlockState> builder) {
-        builder.add(STAGE);
+        builder.add(STAGE, SYNCED);
     }
 
     @Nullable

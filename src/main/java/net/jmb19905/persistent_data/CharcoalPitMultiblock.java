@@ -28,6 +28,7 @@ import java.util.Map;
 import java.util.function.Consumer;
 
 import static net.jmb19905.block.CharringWoodBlock.STAGE;
+import static net.jmb19905.block.CharringWoodBlock.SYNCED;
 import static net.jmb19905.block.CharringWoodBlock.Stage.*;
 
 /**
@@ -77,16 +78,18 @@ public class CharcoalPitMultiblock {
 
         test(server.getWorld(worldKey));
 
+        if (queued) {
+            update(server);
+            queued = false;
+        }
+
         if (burnTime == maxBurnTime / 3)
             update(server);
         else if (burnTime == maxBurnTime * 2/3)
             update(server);
         else if (burnTime >= maxBurnTime)
             update(server);
-        else if (queued) {
-            update(server);
-            queued = false;
-        } else if (blockPositions.size() == 1)
+        else if (blockPositions.size() == 1)
             update(server);
 
     }
@@ -112,6 +115,14 @@ public class CharcoalPitMultiblock {
 
     public int getBlockCount() {
         return blockPositions.size();
+    }
+
+    public CharringWoodBlock.Stage getStage() {
+        if (burnTime >= maxBurnTime * 2/3)
+            return CHARRING;
+        else if (burnTime >= maxBurnTime / 3)
+            return BURNING;
+        else return IGNITING;
     }
 
     public void setOutdated() {
@@ -166,15 +177,15 @@ public class CharcoalPitMultiblock {
     private void test(ServerWorld world) {
         process(world, ctx -> {
             var pos = ctx.pos();
-            //var state = ctx.state();
+            var state = ctx.state();
             var entity = ctx.entity();
             for (var dir : Direction.values())
-                testSide(world, pos, dir, entity);
+                testSide(world, pos, dir, state, entity);
 
         });
     }
 
-    public void testSide(ServerWorld world, BlockPos pos, Direction dir, CharringWoodBlockEntity entity) {
+    public void testSide(ServerWorld world, BlockPos pos, Direction dir, BlockState state, CharringWoodBlockEntity entity) {
         var sidePos = pos.offset(dir);
         var sideState = world.getBlockState(sidePos);
 
@@ -189,7 +200,10 @@ public class CharcoalPitMultiblock {
         } else if (sideState.isIn(Carbonize.CHARCOAL_PILE_VALID_FUEL)) {
             var parent = world.getBlockState(sidePos);
             world.setBlockState(sidePos, Carbonize.CHARRING_WOOD.getDefaultState());
-            world.getBlockEntity(sidePos, Carbonize.CHARRING_WOOD_TYPE).ifPresent(blockEntity -> blockEntity.sync(parent));
+            world.getBlockEntity(sidePos, Carbonize.CHARRING_WOOD_TYPE).ifPresent(blockEntity -> {
+                blockEntity.sync(parent);
+                world.setBlockState(sidePos, blockEntity.getCachedState().with(SYNCED, true));
+            });
         } else if (entity.getCachedState().get(STAGE).ordinal() > IGNITING.ordinal()) {
             if (sideState.isReplaceable() || sideState.isAir()) {
                 BlockState fireState;
