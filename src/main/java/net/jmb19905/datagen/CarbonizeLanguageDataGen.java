@@ -3,6 +3,7 @@ package net.jmb19905.datagen;
 import net.fabricmc.fabric.api.datagen.v1.FabricDataOutput;
 import net.fabricmc.fabric.api.datagen.v1.provider.FabricLanguageProvider;
 import net.jmb19905.Carbonize;
+import net.jmb19905.charcoal_pit.CharcoalPitInit;
 
 public class CarbonizeLanguageDataGen extends FabricLanguageProvider {
 
@@ -12,7 +13,7 @@ public class CarbonizeLanguageDataGen extends FabricLanguageProvider {
 
     @Override
     public void generateTranslations(TranslationBuilder translationBuilder) {
-        translationBuilder.add(Carbonize.CHARRING_WOOD, "Charring Wood");
+        translationBuilder.add(CharcoalPitInit.CHARRING_WOOD, "Charring Wood");
         translationBuilder.add(Carbonize.WOOD_STACK, "Wood Stack");
         translationBuilder.add(Carbonize.CHARCOAL_STACK, "Charcoal Stack");
         translationBuilder.add(Carbonize.CHARCOAL_LOG, "Charcoal Log");

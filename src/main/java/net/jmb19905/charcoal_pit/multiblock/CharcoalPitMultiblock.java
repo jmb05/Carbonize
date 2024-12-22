@@ -3,15 +3,15 @@ package net.jmb19905.charcoal_pit.multiblock;
 import net.jmb19905.Carbonize;
 import net.jmb19905.charcoal_pit.block.CharringWoodBlock;
 import net.jmb19905.charcoal_pit.block.CharringWoodBlockEntity;
-import net.jmb19905.util.BlockHelper;
-import net.jmb19905.util.BlockPosWrapper;
+import net.jmb19905.util.*;
+import net.jmb19905.util.queue.Queueable;
+import net.jmb19905.util.queue.TaskManager;
+import net.jmb19905.util.queue.WrappedQueueable;
 import net.minecraft.block.BlockState;
 import net.minecraft.block.Blocks;
 import net.minecraft.block.ConnectingBlock;
 import net.minecraft.block.TntBlock;
-import net.minecraft.registry.RegistryKey;
 import net.minecraft.registry.tag.BlockTags;
-import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.world.ServerWorld;
 import net.minecraft.sound.SoundCategory;
 import net.minecraft.sound.SoundEvents;
@@ -20,77 +20,90 @@ import net.minecraft.util.Util;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.ChunkPos;
 import net.minecraft.util.math.Direction;
-import net.minecraft.world.World;
+import org.jetbrains.annotations.Nullable;
 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Consumer;
 
+import static net.jmb19905.charcoal_pit.CharcoalPitInit.CHARRING_WOOD;
+import static net.jmb19905.charcoal_pit.CharcoalPitInit.CHARRING_WOOD_TYPE;
 import static net.jmb19905.charcoal_pit.block.CharringWoodBlock.STAGE;
 import static net.jmb19905.charcoal_pit.block.CharringWoodBlock.SYNCED;
 import static net.jmb19905.charcoal_pit.block.CharringWoodBlock.Stage.*;
 
 /**
- * This is a very important handler for charcoal pits. It enables it to work as one. Where this multiblock will control its members.
- * This solves many synchronization issues between charcoal pits. However, it comes at the consequence of being harder to debug. So,
- * if there are issues here let me (StockiesLad) know as I have a relatively firm grasp how the charcoal pits work by now.
+ * This class is practically just a giant block entity. So just treat it as one. {@link  CharcoalPitManager} will handle everything else.
+ * Every {@link CharringWoodBlockEntity} must always try to upload its data to here for everything to work properly. This multi-block
+ * must be the only one to either execute a task directly or delegate it to it's block entities.
  */
-public class CharcoalPitMultiblock {
+public class CharcoalPitMultiblock implements WrappedQueueable {
     public static final Map<Direction, BooleanProperty> DIRECTION_PROPERTIES = ConnectingBlock.FACING_PROPERTIES.entrySet().stream().filter(entry -> entry.getKey() != Direction.DOWN).collect(Util.toMap());
     public static final BlockState FIRE_STATE = Blocks.FIRE.getDefaultState();
     public static final int SINGLE_BURN_TIME = 200;
 
-    private CharcoalPitManager managerCache;
-    public final RegistryKey<World> worldKey;
+    /**
+     * Use {@link CharcoalPitMultiblock#getPitManager(ServerWorld)} to access it safely.
+     */
+    @Nullable private CharcoalPitManager pitManager;
+    @Nullable private ServerWorld world;
+    private final TaskManager taskManager;
     public final List<BlockPosWrapper> blockPositions;
     private final List<ChunkPos> chunkPositions;
     public int maxBurnTime;
     public int burnTime;
     public boolean extinguished;
-    private boolean queued;
 
-    public CharcoalPitMultiblock(CharcoalPitManager charcoalPitManager, RegistryKey<World> worldKey, int maxBurnTime, int burnTime, boolean extinguished) {
-        this.managerCache = charcoalPitManager;
-        this.worldKey = worldKey;
+    public CharcoalPitMultiblock(@Nullable CharcoalPitManager charcoalPitManager, int maxBurnTime, int burnTime, boolean extinguished) {
+        this.pitManager = charcoalPitManager;
+        this.world = null;
+        this.taskManager = new TaskManager();
         this.blockPositions = new ArrayList<>();
         this.chunkPositions = new ArrayList<>();
         this.maxBurnTime = maxBurnTime;
         this.burnTime = burnTime;
         this.extinguished = extinguished;
-        this.queued = false;
     }
 
-    public CharcoalPitMultiblock(CharcoalPitManager charcoalPitManager, RegistryKey<World> worldKey, List<BlockPos> blockPositions, int maxBurnTime, int burnTime, boolean extinguished) {
-        this(charcoalPitManager, worldKey, maxBurnTime, burnTime, extinguished);
+    public CharcoalPitMultiblock(CharcoalPitManager charcoalPitManager, List<BlockPos> blockPositions, int maxBurnTime, int burnTime, boolean extinguished) {
+        this(charcoalPitManager, maxBurnTime, burnTime, extinguished);
         this.appendBlockPositions(blockPositions.stream().map(BlockPosWrapper::new).toList());
     }
 
-    public CharcoalPitMultiblock(CharcoalPitManager charcoalPitManager, RegistryKey<World> worldKey, BlockPos pos, int maxBurnTime, int burnTime, boolean extinguished) {
-        this(charcoalPitManager, worldKey, maxBurnTime, burnTime, extinguished);
+    public CharcoalPitMultiblock(CharcoalPitManager charcoalPitManager, BlockPos pos, int maxBurnTime, int burnTime, boolean extinguished) {
+        this(charcoalPitManager, maxBurnTime, burnTime, extinguished);
         appendBlockPositions(new BlockPosWrapper(pos));
     }
 
-    public void tick(MinecraftServer server) {
-        if (!canTick(server.getWorld(worldKey))) return;
+    public static CharcoalPitMultiblock def(BlockPos pos) {
+        return new CharcoalPitMultiblock(null, pos, SINGLE_BURN_TIME, 0, false);
+    }
+
+    /**
+     * Ticks are managed supplied by {@link CharcoalPitManager}. It works in conjunction with {@link Queueable} to manage synchronise
+     * everything to execute here. Theoretically from here, multi-threading support could be added with a couple changes. Just as long
+     * as world modifications are queued properly.
+     */
+    public void tick(ServerWorld world) {
+        cacheWorld(world);
 
         burnTime++;
 
-        test(server.getWorld(worldKey));
+        testSides();
 
-        if (queued) {
-            update(server);
-            queued = false;
-        }
+        executeQueue();
 
         if (burnTime == maxBurnTime / 3)
-            update(server);
+            update();
         else if (burnTime == maxBurnTime * 2/3)
-            update(server);
+            update();
         else if (burnTime >= maxBurnTime)
-            update(server);
+            update();
         else if (blockPositions.size() == 1)
-            update(server);
+            update();
+
+        testUnity();
 
     }
 
@@ -99,14 +112,11 @@ public class CharcoalPitMultiblock {
      * This is useful for preventing:
      * <p> 1 - Charcoal pits falling out of sync on chunk borders.
      * <p> 2. - Charcoal pits ticking, setting blockStates and other things it SHOULD NOT BE DOING if its chunks aren't loaded.
+     * @param world  world requires a supplied instance as it could be called before ticking even begins.
      */
     @SuppressWarnings("BooleanMethodIsAlwaysInverted")
     public boolean canTick(ServerWorld world) {
         return world != null && chunkPositions.stream().allMatch(chunkPos -> world.isChunkLoaded(chunkPos.x, chunkPos.z));
-    }
-
-    public void queue() {
-        this.queued = true;
     }
 
     public int getRemainingBurnTime() {
@@ -135,10 +145,12 @@ public class CharcoalPitMultiblock {
         return getBlockCount() == 0 || getRemainingBurnTime() < 0;
     }
 
-    public boolean hasPosition(ServerWorld world, BlockPosWrapper pos) {
-        var worldMatches = world.getRegistryKey().getValue().equals(worldKey.getValue());
-        var positionMatches = blockPositions.stream().anyMatch(blockPosition -> blockPosition.equals(pos));
-        return worldMatches && positionMatches;
+    public boolean hasPosition(BlockPos pos) {
+        return hasPosition(new BlockPosWrapper(pos));
+    }
+
+    public boolean hasPosition(BlockPosWrapper pos) {
+        return blockPositions.stream().anyMatch(blockPosition -> blockPosition.equals(pos));
     }
 
     public void appendBlockPositions(BlockPosWrapper pos) {
@@ -153,10 +165,20 @@ public class CharcoalPitMultiblock {
     public void consume(CharcoalPitMultiblock data) {
         appendBlockPositions(data.blockPositions);
         var totalBlockCount = getBlockCount();
-        this.maxBurnTime = burnTimeFormula(this.maxBurnTime, data.maxBurnTime, totalBlockCount);
-        this.burnTime = burnTimeFormula(this.burnTime, data.burnTime, totalBlockCount);
+        this.maxBurnTime = calculateBurnTime(this.maxBurnTime, data.maxBurnTime, totalBlockCount);
+        this.burnTime =  calculateBurnTime(this.burnTime, data.burnTime, totalBlockCount);
         this.extinguished = this.extinguished || data.extinguished;
         data.setOutdated();
+        queueUpdate();
+    }
+
+    public void queueUpdate() {
+        queue(this::update);
+    }
+
+    public void cacheWorld(ServerWorld world) {
+        if (this.world == null)
+            this.world = world;
     }
 
     @Override
@@ -164,8 +186,7 @@ public class CharcoalPitMultiblock {
         if (obj == null) return false;
         if (super.equals(obj)) return true;
         if (obj instanceof CharcoalPitMultiblock data) {
-            return  this.worldKey.getValue().equals(data.worldKey.getValue()) &&
-                    this.blockPositions.equals(data.blockPositions) &&
+            return  this.blockPositions.equals(data.blockPositions) &&
                     this.maxBurnTime == data.maxBurnTime &&
                     this.burnTime == data.burnTime &&
                     this.extinguished == data.extinguished;
@@ -174,33 +195,59 @@ public class CharcoalPitMultiblock {
         return false;
     }
 
-    private void test(ServerWorld world) {
-        process(world, ctx -> {
+    private void testUnity() {
+        var blockCount = getBlockCount();
+
+        if (blockCount <= 1) return;
+
+        var testedPositions = collectExisting(world, blockPositions.get(0).expose());
+        var testedBlockCount = testedPositions.size();
+
+        if (testedBlockCount >= blockCount) return;
+
+        var remainingBlockCount = getBlockCount() - testedBlockCount;
+        var manager = getPitManager(world);
+
+        manager.add(new CharcoalPitMultiblock(
+                manager,
+                maxBurnTime * testedBlockCount / blockCount,
+                burnTime * testedBlockCount / blockCount,
+                extinguished
+        ));
+
+        this.burnTime = burnTime * remainingBlockCount / blockCount;
+        this.maxBurnTime = maxBurnTime * remainingBlockCount / blockCount;
+
+        testedPositions.forEach(pos -> removePosition(new BlockPosWrapper(pos)));
+    }
+
+    private void testSides() {
+        process(ctx -> {
             var pos = ctx.pos();
             var state = ctx.state();
             var entity = ctx.entity();
             for (var dir : Direction.values())
-                testSide(world, pos, dir, state, entity);
-
+                testSide(pos, dir, state, entity);
         });
     }
 
-    public void testSide(ServerWorld world, BlockPos pos, Direction dir, BlockState state, CharringWoodBlockEntity entity) {
+    public void testSide(BlockPos pos, Direction dir, BlockState state, CharringWoodBlockEntity entity) {
+        assert world != null;
+
         var sidePos = pos.offset(dir);
         var sideState = world.getBlockState(sidePos);
-
         // Checks if a block is not flammable and a full cube to determine if it's a valid wall; replaces 'charcoal_pile_valid_wall'.
         if (BlockHelper.isNonFlammableFullCube(world, pos, sideState)) return;
 
         // Terminate loop if the side pos is already a member of this multi-block - avoids unecessary checks. One of the multi-block-exclusive optimisations.
-        if (hasPosition(world, new BlockPosWrapper(sidePos))) return;
+        if (hasPosition(sidePos)) return;
 
-        if (sideState.isOf(Carbonize.CHARRING_WOOD)) {
-            access(world).merge(world, pos, sidePos);
+        if (sideState.isOf(CHARRING_WOOD)) {
+            queue(() -> getPitManager(world).merge(pos, sidePos));
         } else if (sideState.isIn(Carbonize.CHARCOAL_PILE_VALID_FUEL)) {
             var parent = world.getBlockState(sidePos);
-            world.setBlockState(sidePos, Carbonize.CHARRING_WOOD.getDefaultState());
-            world.getBlockEntity(sidePos, Carbonize.CHARRING_WOOD_TYPE).ifPresent(blockEntity -> {
+            world.setBlockState(sidePos, CHARRING_WOOD.getDefaultState());
+            world.getBlockEntity(sidePos, CHARRING_WOOD_TYPE).ifPresent(blockEntity -> {
                 blockEntity.sync(parent);
                 world.setBlockState(sidePos, blockEntity.getCachedState().with(SYNCED, true));
             });
@@ -223,41 +270,45 @@ public class CharcoalPitMultiblock {
         }
     }
 
-
-    private void update(MinecraftServer server) {
-        var world = server.getWorld(worldKey);
+    private void update() {
+        assert world != null;
         if (burnTime >= maxBurnTime) {
-            process(world, ctx -> ctx.world().setBlockState(ctx.pos(), ctx.entity().getFinal()));
+            process(ctx -> world.setBlockState(ctx.pos(), ctx.entity().getFinal()));
             if (!extinguished)
-                if (world != null && !blockPositions.isEmpty()) {
+                if (!blockPositions.isEmpty()) {
                     world.playSound(null, blockPositions.get(world.getRandom().nextInt(blockPositions.size())).expose(), SoundEvents.BLOCK_FIRE_EXTINGUISH, SoundCategory.BLOCKS, 2f, 1f);
                     extinguished = true;
                 }
         } else if (burnTime >= maxBurnTime * 2/3)
-            updateStates(world, CHARRING);
+            updateStates(CHARRING);
         else if (burnTime >= maxBurnTime / 3)
-            updateStates(world, BURNING);
-        else updateStates(world, IGNITING);
+            updateStates(BURNING);
+        else updateStates(IGNITING);
     }
 
-    private void updateStates(ServerWorld world, CharringWoodBlock.Stage stage) {
-        process(world, ctx -> {
+    private void updateStates(CharringWoodBlock.Stage stage) {
+        process(ctx -> {
             if (!ctx.state().get(STAGE).equals(stage)) {
-                ctx.world().setBlockState(ctx.pos(), ctx.state().with(STAGE, stage));
+                assert world != null;
+                world.setBlockState(ctx.pos(), ctx.state().with(STAGE, stage));
                 ctx.entity().update();
             }
         });
     }
 
-    private void process(ServerWorld world, Consumer<CharcoalPitContext> consumer) {
-        for (int i = 0; i < blockPositions.size(); i++) {
-            var exposedPos = blockPositions.get(i).expose();
+    private void process(Consumer<CharcoalPitContext> consumer) {
+        for (BlockPosWrapper blockPosition : blockPositions) {
+            var exposedPos = blockPosition.expose();
+            assert world != null;
             var state = world.getBlockState(exposedPos);
-            if (state.isOf(Carbonize.CHARRING_WOOD)) {
-                var entity = world.getBlockEntity(exposedPos, Carbonize.CHARRING_WOOD_TYPE);
-                consumer.accept(new CharcoalPitContext(world, exposedPos, state, entity.orElseThrow()));
+            if (state.isOf(CHARRING_WOOD)) {
+                var entity = world.getBlockEntity(exposedPos, CHARRING_WOOD_TYPE);
+                consumer.accept(new CharcoalPitContext(exposedPos, state, entity.orElseThrow()));
             } else {
-                removePosition(i);
+                var blockCount = getBlockCount();
+                this.burnTime = this.burnTime * (blockCount - 1) / blockCount;
+                this.maxBurnTime = this.maxBurnTime * (blockCount - 1) / blockCount;
+                queue(() -> removePosition(blockPosition));
             }
         }
     }
@@ -270,25 +321,64 @@ public class CharcoalPitMultiblock {
 
     }
 
-    private void removePosition(int index) {
-        var chunkPos = new ChunkPos(blockPositions.get(index).expose());
-        blockPositions.remove(index);
+    public void removePosition(BlockPosWrapper posWrapper) {
+        var chunkPos = new ChunkPos(posWrapper.expose());
+        blockPositions.remove(posWrapper);
         if (blockPositions.stream().noneMatch(pos -> chunkPos.equals(new ChunkPos(pos.expose()))))
             chunkPositions.remove(chunkPos);
     }
 
-    private CharcoalPitManager access(ServerWorld world) {
-        if (managerCache == null) {
-            managerCache = CharcoalPitManager.getServerState(world);
-        } else managerCache.markDirty();
-        return managerCache;
+    private CharcoalPitManager getPitManager(ServerWorld world) {
+        if (pitManager == null) {
+            pitManager = CharcoalPitManager.get(world);
+        } else pitManager.markDirty();
+        return pitManager;
     }
 
-    public static CharcoalPitMultiblock def(RegistryKey<World> world, BlockPos pos) {
-        return new CharcoalPitMultiblock(null, world, pos, SINGLE_BURN_TIME, 0, false);
+    @Override
+    public TaskManager getManager() {
+        return taskManager;
     }
 
-    private static int burnTimeFormula(int firstBurnTime, int secondBurnTime, int totalBlockCount) {
-        return (int) (Math.max(firstBurnTime, secondBurnTime) + Math.min(firstBurnTime, secondBurnTime) / Math.cbrt(totalBlockCount));
+    public static List<BlockPos> collectFuels(ServerWorld world, BlockPos startingPos, Direction directionFrom) {
+        List<BlockPos> alreadyChecked = new ArrayList<>();
+        alreadyChecked.add(startingPos.offset(directionFrom));
+        return collect(world, startingPos, new ObjectHolder<>(new ArrayList<>()), alreadyChecked, false).getValue();
+    }
+
+    public static List<BlockPos> collectExisting(ServerWorld world, BlockPos startingPos) {
+        return collect(world, startingPos, new ObjectHolder<>(new ArrayList<>()), new ArrayList<>(), true).getValue();
+    }
+
+    private static ObjectHolder<List<BlockPos>> collect(ServerWorld world, BlockPos pos,
+            ObjectHolder<List<BlockPos>> parsedPositions, List<BlockPos> checkedPositions, boolean checkExisting) {
+        if (checkedPositions.contains(pos)) return parsedPositions;
+        if (parsedPositions.isLocked()) return parsedPositions;
+
+        checkedPositions.add(pos);
+        BlockState state = world.getBlockState(pos);
+
+        if (BlockHelper.isNonFlammableFullCube(world, pos, state))
+             return parsedPositions;
+
+        if (!checkExisting && !state.isIn(Carbonize.CHARCOAL_PILE_VALID_FUEL))
+            return parsedPositions.getValue(List::clear).lock();
+
+        if (checkExisting && !state.isOf(CHARRING_WOOD))
+            return parsedPositions;
+
+        parsedPositions.getValue().add(pos);
+
+        for (Direction direction : Direction.values()) {
+                collect(world, pos.offset(direction), parsedPositions, checkedPositions, checkExisting);
+            if (parsedPositions.isLocked())
+                break;
+        }
+
+        return parsedPositions;
+    }
+
+    private static int calculateBurnTime(int firstBurnTime, int secondBurnTime, int totalBlockCount) {
+        return (int) (Math.max(firstBurnTime, secondBurnTime) + Math.min(firstBurnTime, secondBurnTime) / Math.cbrt(Math.min(totalBlockCount, 1)));
     }
 }

@@ -1,5 +1,6 @@
 package net.jmb19905.util;
 
+import java.util.function.Consumer;
 import java.util.function.Function;
 
 public class ObjectHolder<T> {
@@ -12,6 +13,12 @@ public class ObjectHolder<T> {
 
     public T getValue() {
         return value;
+    }
+
+    public ObjectHolder<T> getValue(Consumer<T> consumer) {
+        if (!locked)
+            consumer.accept(this.value);
+        return this;
     }
 
     public ObjectHolder<T> updateValue(Function<T, T> mutator) {

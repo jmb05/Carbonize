@@ -1,8 +1,6 @@
 package net.jmb19905.charcoal_pit.block;
 
-import net.jmb19905.Carbonize;
-import net.jmb19905.util.BlockHelper;
-import net.jmb19905.util.ObjectHolder;
+import net.jmb19905.charcoal_pit.CharcoalPitInit;
 import net.minecraft.block.*;
 import net.minecraft.block.entity.BlockEntity;
 import net.minecraft.block.entity.BlockEntityTicker;
@@ -19,15 +17,12 @@ import net.minecraft.state.property.BooleanProperty;
 import net.minecraft.state.property.EnumProperty;
 import net.minecraft.util.StringIdentifiable;
 import net.minecraft.util.math.BlockPos;
-import net.minecraft.util.math.Direction;
 import net.minecraft.util.math.random.Random;
 import net.minecraft.util.shape.VoxelShape;
 import net.minecraft.world.BlockView;
 import net.minecraft.world.World;
 import org.jetbrains.annotations.Nullable;
 
-import java.util.ArrayList;
-import java.util.List;
 import java.util.Optional;
 import java.util.function.Function;
 import java.util.function.Supplier;
@@ -86,14 +81,14 @@ public class CharringWoodBlock extends BlockWithEntity {
     @Nullable
     @Override
     public <T extends BlockEntity> BlockEntityTicker<T> getTicker(World world, BlockState state, BlockEntityType<T> type) {
-        return checkType(type, Carbonize.CHARRING_WOOD_TYPE, CharringWoodBlockEntity::tick);
+        return checkType(type, CharcoalPitInit.CHARRING_WOOD_TYPE, CharringWoodBlockEntity::tick);
     }
 
     @SuppressWarnings("deprecation")
     @Override
     public void neighborUpdate(BlockState state, World world, BlockPos pos, Block sourceBlock, BlockPos sourcePos, boolean notify) {
         if (world instanceof ServerWorld serverWorld)
-            serverWorld.getBlockEntity(pos, Carbonize.CHARRING_WOOD_TYPE).ifPresent(CharringWoodBlockEntity::update);
+            serverWorld.getBlockEntity(pos, CharcoalPitInit.CHARRING_WOOD_TYPE).ifPresent(CharringWoodBlockEntity::update);
         super.neighborUpdate(state, world, pos, sourceBlock, sourcePos, notify);
     }
 
@@ -136,37 +131,7 @@ public class CharringWoodBlock extends BlockWithEntity {
     }
 
     public static Optional<CharringWoodBlockEntity> getEntity(BlockView world, BlockPos pos) {
-        return world.getBlockEntity(pos, Carbonize.CHARRING_WOOD_TYPE);
-    }
-
-    public static int checkValid(World world, BlockPos pos, Direction direction) {
-        List<BlockPos> alreadyChecked = new ArrayList<>();
-        alreadyChecked.add(pos.offset(direction));
-        return check(world, pos, alreadyChecked, new ObjectHolder<>(0)).getValue();
-    }
-
-    private static ObjectHolder<Integer> check(World world, BlockPos pos, List<BlockPos> alreadyChecked, ObjectHolder<Integer> count) {
-        if (alreadyChecked.contains(pos)) return count;
-
-        if (count.isLocked()) return count;
-
-        alreadyChecked.add(pos);
-        BlockState state = world.getBlockState(pos);
-
-        if (BlockHelper.isNonFlammableFullCube(world, pos, state))
-            return count;
-        else if (!state.isIn(Carbonize.CHARCOAL_PILE_VALID_FUEL))
-            return count.setValue(0).lock();
-
-        count.updateValue(i -> i + 1);
-
-        for (Direction dir : Direction.values()) {
-            check(world, pos.offset(dir), alreadyChecked, count);
-            if (count.isLocked())
-                break;
-        }
-
-        return count;
+        return world.getBlockEntity(pos, CharcoalPitInit.CHARRING_WOOD_TYPE);
     }
 
     @SuppressWarnings("OptionalUsedAsFieldOrParameterType")

@@ -3,6 +3,7 @@ package net.jmb19905.recipe;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonSyntaxException;
 import net.jmb19905.Carbonize;
+import net.jmb19905.charcoal_pit.CharcoalPitInit;
 import net.jmb19905.charcoal_pit.multiblock.CharcoalPitMultiblock;
 import net.minecraft.block.Block;
 import net.minecraft.network.PacketByteBuf;
@@ -26,7 +27,7 @@ public class BurnRecipeSerializer implements RecipeSerializer<BurnRecipe> {
 
         int burnTime = rawBurnTime != null ? Integer.parseInt(rawBurnTime) : CharcoalPitMultiblock.SINGLE_BURN_TIME;
         TagKey<Block> input = TagKey.of(RegistryKeys.BLOCK, new Identifier(rawInput));
-        Block medium = rawMedium != null ? findBlock(rawMedium): Carbonize.CHARRING_WOOD;
+        Block medium = rawMedium != null ? findBlock(rawMedium): CharcoalPitInit.CHARRING_WOOD;
         Block output = findBlock(rawOutput);
 
         return new BurnRecipe(id, burnTime, input, medium, output);

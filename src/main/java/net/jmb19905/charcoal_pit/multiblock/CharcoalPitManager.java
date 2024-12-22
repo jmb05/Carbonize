@@ -2,10 +2,9 @@ package net.jmb19905.charcoal_pit.multiblock;
 
 import net.jmb19905.Carbonize;
 import net.jmb19905.util.BlockPosWrapper;
+import net.jmb19905.util.queue.TaskManager;
+import net.jmb19905.util.queue.WrappedQueueable;
 import net.minecraft.nbt.NbtCompound;
-import net.minecraft.registry.RegistryKey;
-import net.minecraft.registry.RegistryKeys;
-import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.world.ServerWorld;
 import net.minecraft.util.Identifier;
 import net.minecraft.util.math.BlockPos;
@@ -15,10 +14,15 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Function;
 
-public class CharcoalPitManager extends PersistentState {
+/**
+ *  This is the world-discriminated manager that handles all the charcoal pit data. It is what controls & ticks the multi-blocks. Most of the functionality
+ *  is stored inside the multi-blocks themselves, this manager will just access it for you. The reasoning behind this structuring is to make everything more
+ *  readable.
+ */
+public class CharcoalPitManager extends PersistentState implements WrappedQueueable {
     public static final Identifier CHARCOAL_PIT_ID = new Identifier(Carbonize.MOD_ID, "charcoal_pit_data");
     private final List<CharcoalPitMultiblock> storage;
-    private boolean queued;
+    private final TaskManager taskManager;
 
     public CharcoalPitManager() {
         this(new ArrayList<>());
@@ -26,35 +30,33 @@ public class CharcoalPitManager extends PersistentState {
 
     public CharcoalPitManager(List<CharcoalPitMultiblock> list) {
         this.storage = list;
-        this.queued = false;
+        this.taskManager = new TaskManager();
     }
 
     @SuppressWarnings("SuspiciousListRemoveInLoop")
-    public void tick(MinecraftServer server) {
+    public void tick(ServerWorld world) {
         for (int i = 0; i < storage.size(); i++) {
             var data = storage.get(i);
-            data.tick(server);
-            if (queued) {
-                data.queue();
-                queued = false;
-            }
-            if (data.isOutdated())
-                storage.remove(i);
+            ifQueued(data::queue);
+            executeQueue();
+            if (data.canTick(world)) data.tick(world);
+            if (data.isOutdated()) storage.remove(i);
         }
     }
 
-    public void queue() {
-        queued = true;
+    public void add(Function<CharcoalPitManager, CharcoalPitMultiblock> getter) {
+        var multiblock = getter.apply(this);
+        add(multiblock);
+
     }
 
-    public void add(Function<CharcoalPitManager, CharcoalPitMultiblock> dataGetter) {
-        var data = dataGetter.apply(this);
-        if (!exists(data))
-            storage.add(data);
+    public void add(CharcoalPitMultiblock multiblock) {
+        if (!exists(multiblock))
+            storage.add(multiblock);
     }
 
-    public CharcoalPitMultiblock get(ServerWorld world, BlockPos pos) {
-        return storage.stream().filter(data -> data.hasPosition(world, new BlockPosWrapper(pos))).findFirst().orElse(null);
+    public CharcoalPitMultiblock get(BlockPos pos) {
+        return storage.stream().filter(data -> data.hasPosition(pos)).findFirst().orElse(null);
     }
 
     /**
@@ -65,15 +67,15 @@ public class CharcoalPitManager extends PersistentState {
      * <p>
      * <p> <p> NOTE: Only one world instance is needed as this function should only call from neighbouring positions.
      */
-    public void merge(ServerWorld world, BlockPos priorityPos, BlockPos subPos) {
-        var priorityData = get(world, priorityPos);
-        var subData = get(world, subPos);
-        if (priorityData != null && subData != null)
+    public void merge(BlockPos priorityPos, BlockPos subPos) {
+        var priorityData = get(priorityPos);
+        var subData = get(subPos);
+        if (priorityData != null && subData != null && !priorityData.equals(subData))
             priorityData.consume(subData);
     }
 
-    public boolean exists(ServerWorld world, BlockPos pos) {
-        return get(world, pos) != null;
+    public boolean exists(BlockPos pos) {
+        return get(pos) != null;
     }
 
     public boolean exists(CharcoalPitMultiblock data) {
@@ -90,7 +92,6 @@ public class CharcoalPitManager extends PersistentState {
             if (dataExists) {
                 var positions = data.blockPositions;
                 nbt.putInt(withIndex("BlockPositionsSize", index), positions.size());
-                nbt.putString(withIndex("World", index), data.worldKey.getValue().toString());
                 nbt.putInt(withIndex("MaxBurnTime", index), data.maxBurnTime);
                 nbt.putInt(withIndex("BurnTime", index), data.burnTime);
                 nbt.putBoolean(withIndex("Extinguished", index), data.extinguished);
@@ -105,6 +106,11 @@ public class CharcoalPitManager extends PersistentState {
         return nbt;
     }
 
+    @Override
+    public TaskManager getManager() {
+        return taskManager;
+    }
+
     private static CharcoalPitManager createFromNbt(NbtCompound nbt) {
         var size = nbt.getInt("Size");
         CharcoalPitManager data = new CharcoalPitManager(new ArrayList<>(size));
@@ -112,25 +118,19 @@ public class CharcoalPitManager extends PersistentState {
             if (nbt.getBoolean(withIndex("NotNull", index))) {
                 var blockPositionsSize = nbt.getInt(withIndex("BlockPositionsSize", index));
                 ArrayList<BlockPos> blockPositions = new ArrayList<>(blockPositionsSize);
-                var world = RegistryKey.of(RegistryKeys.WORLD, new Identifier(nbt.getString(withIndex("World", index))));
                 var maxBurnTime = nbt.getInt(withIndex("MaxBurnTime", index));
                 var burnTime = nbt.getInt(withIndex("BurnTime", index));
                 var extinguished = nbt.getBoolean(withIndex("Extinguished", index));
                 for (var pos = 0; pos < blockPositionsSize; pos++)
                     if (nbt.getBoolean(withIndex(withIndex("BlockPositionNotNull", index), pos)))
                         blockPositions.add(BlockPosWrapper.raise(nbt.getIntArray(withIndex(withIndex("BlockPositions", index), pos))));
-                data.storage.add(new CharcoalPitMultiblock(data, world, blockPositions, maxBurnTime, burnTime, extinguished));
+                data.storage.add(new CharcoalPitMultiblock(data, blockPositions, maxBurnTime, burnTime, extinguished));
             }
         }
         return data;
     }
-
-    public static CharcoalPitManager getServerState(ServerWorld world) {
-        return getServerState(world.getServer());
-    }
-
-    public static CharcoalPitManager getServerState(MinecraftServer server) {
-        CharcoalPitManager data = server.getOverworld().getPersistentStateManager().getOrCreate(CharcoalPitManager::createFromNbt, CharcoalPitManager::new, CHARCOAL_PIT_ID.toString());
+    public static CharcoalPitManager get(ServerWorld world) {
+        CharcoalPitManager data = world.getPersistentStateManager().getOrCreate(CharcoalPitManager::createFromNbt, CharcoalPitManager::new, CHARCOAL_PIT_ID.toString());
         data.markDirty();
         return data;
     }
