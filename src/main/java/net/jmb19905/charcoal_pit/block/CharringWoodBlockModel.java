@@ -1,4 +1,4 @@
-package net.jmb19905.model;
+package net.jmb19905.charcoal_pit.block;
 
 import net.fabricmc.fabric.api.renderer.v1.model.ForwardingBakedModel;
 import net.fabricmc.fabric.api.renderer.v1.render.RenderContext;

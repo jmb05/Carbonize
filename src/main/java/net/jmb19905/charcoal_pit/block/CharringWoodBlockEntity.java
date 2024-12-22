@@ -1,9 +1,9 @@
-package net.jmb19905.blockEntity;
+package net.jmb19905.charcoal_pit.block;
 
 import net.fabricmc.fabric.api.blockview.v2.RenderDataBlockEntity;
 import net.jmb19905.Carbonize;
-import net.jmb19905.persistent_data.CharcoalPitManager;
-import net.jmb19905.persistent_data.CharcoalPitMultiblock;
+import net.jmb19905.charcoal_pit.multiblock.CharcoalPitManager;
+import net.jmb19905.charcoal_pit.multiblock.CharcoalPitMultiblock;
 import net.jmb19905.recipe.BurnRecipe;
 import net.jmb19905.util.BlockHelper;
 import net.minecraft.block.Block;
@@ -23,7 +23,7 @@ import org.jetbrains.annotations.Nullable;
 
 import java.util.List;
 
-import static net.jmb19905.block.CharringWoodBlock.STAGE;
+import static net.jmb19905.charcoal_pit.block.CharringWoodBlock.STAGE;
 
 /**
  * This class has no inherent functionality. Its job is purely just to sync itself with {@link CharcoalPitManager} by attempting

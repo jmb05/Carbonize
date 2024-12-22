@@ -1,8 +1,8 @@
 package net.jmb19905.compat;
 
 import net.jmb19905.Carbonize;
-import net.jmb19905.block.CharringWoodBlock;
-import net.jmb19905.blockEntity.CharringWoodBlockEntity;
+import net.jmb19905.charcoal_pit.block.CharringWoodBlock;
+import net.jmb19905.charcoal_pit.block.CharringWoodBlockEntity;
 import net.minecraft.block.Block;
 import net.minecraft.nbt.NbtCompound;
 import net.minecraft.text.Text;

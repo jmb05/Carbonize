@@ -1,8 +1,8 @@
-package net.jmb19905.persistent_data;
+package net.jmb19905.charcoal_pit.multiblock;
 
 import net.jmb19905.Carbonize;
-import net.jmb19905.block.CharringWoodBlock;
-import net.jmb19905.blockEntity.CharringWoodBlockEntity;
+import net.jmb19905.charcoal_pit.block.CharringWoodBlock;
+import net.jmb19905.charcoal_pit.block.CharringWoodBlockEntity;
 import net.jmb19905.util.BlockHelper;
 import net.jmb19905.util.BlockPosWrapper;
 import net.minecraft.block.BlockState;
@@ -27,9 +27,9 @@ import java.util.List;
 import java.util.Map;
 import java.util.function.Consumer;
 
-import static net.jmb19905.block.CharringWoodBlock.STAGE;
-import static net.jmb19905.block.CharringWoodBlock.SYNCED;
-import static net.jmb19905.block.CharringWoodBlock.Stage.*;
+import static net.jmb19905.charcoal_pit.block.CharringWoodBlock.STAGE;
+import static net.jmb19905.charcoal_pit.block.CharringWoodBlock.SYNCED;
+import static net.jmb19905.charcoal_pit.block.CharringWoodBlock.Stage.*;
 
 /**
  * This is a very important handler for charcoal pits. It enables it to work as one. Where this multiblock will control its members.

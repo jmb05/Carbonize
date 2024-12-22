@@ -1,6 +1,6 @@
-package net.jmb19905.persistent_data;
+package net.jmb19905.charcoal_pit.multiblock;
 
-import net.jmb19905.blockEntity.CharringWoodBlockEntity;
+import net.jmb19905.charcoal_pit.block.CharringWoodBlockEntity;
 import net.minecraft.block.BlockState;
 import net.minecraft.server.world.ServerWorld;
 import net.minecraft.util.math.BlockPos;

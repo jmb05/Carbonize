@@ -3,7 +3,7 @@ package net.jmb19905.recipe;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonSyntaxException;
 import net.jmb19905.Carbonize;
-import net.jmb19905.persistent_data.CharcoalPitMultiblock;
+import net.jmb19905.charcoal_pit.multiblock.CharcoalPitMultiblock;
 import net.minecraft.block.Block;
 import net.minecraft.network.PacketByteBuf;
 import net.minecraft.recipe.RecipeSerializer;

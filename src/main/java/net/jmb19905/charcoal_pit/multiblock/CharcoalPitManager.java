@@ -1,4 +1,4 @@
-package net.jmb19905.persistent_data;
+package net.jmb19905.charcoal_pit.multiblock;
 
 import net.jmb19905.Carbonize;
 import net.jmb19905.util.BlockPosWrapper;

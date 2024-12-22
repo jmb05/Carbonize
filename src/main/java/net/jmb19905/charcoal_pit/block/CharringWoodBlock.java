@@ -1,7 +1,6 @@
-package net.jmb19905.block;
+package net.jmb19905.charcoal_pit.block;
 
 import net.jmb19905.Carbonize;
-import net.jmb19905.blockEntity.CharringWoodBlockEntity;
 import net.jmb19905.util.BlockHelper;
 import net.jmb19905.util.ObjectHolder;
 import net.minecraft.block.*;
@@ -33,7 +32,7 @@ import java.util.Optional;
 import java.util.function.Function;
 import java.util.function.Supplier;
 
-import static net.jmb19905.block.CharringWoodBlock.Stage.IGNITING;
+import static net.jmb19905.charcoal_pit.block.CharringWoodBlock.Stage.IGNITING;
 
 public class CharringWoodBlock extends BlockWithEntity {
     public static final EnumProperty<Stage> STAGE = EnumProperty.of("stage", Stage.class);

@@ -10,9 +10,10 @@ import net.fabricmc.fabric.api.object.builder.v1.block.entity.FabricBlockEntityT
 import net.fabricmc.fabric.api.registry.FlammableBlockRegistry;
 import net.fabricmc.fabric.api.registry.FuelRegistry;
 import net.jmb19905.block.*;
-import net.jmb19905.blockEntity.CharringWoodBlockEntity;
+import net.jmb19905.charcoal_pit.block.CharringWoodBlock;
+import net.jmb19905.charcoal_pit.block.CharringWoodBlockEntity;
 import net.jmb19905.config.CarbonizeConfig;
-import net.jmb19905.persistent_data.CharcoalPitManager;
+import net.jmb19905.charcoal_pit.multiblock.CharcoalPitManager;
 import net.jmb19905.recipe.BurnRecipe;
 import net.jmb19905.recipe.BurnRecipeSerializer;
 import net.minecraft.block.*;
