@@ -1,6 +1,6 @@
 package net.jmb19905.util.queue;
 
-public interface Queueable {
+public interface Queuer {
     void executeQueue();
 
     boolean isQueued();

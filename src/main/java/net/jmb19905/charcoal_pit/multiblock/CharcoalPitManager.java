@@ -3,7 +3,7 @@ package net.jmb19905.charcoal_pit.multiblock;
 import net.jmb19905.Carbonize;
 import net.jmb19905.util.BlockPosWrapper;
 import net.jmb19905.util.queue.TaskManager;
-import net.jmb19905.util.queue.WrappedQueueable;
+import net.jmb19905.util.queue.WrappedQueuer;
 import net.minecraft.nbt.NbtCompound;
 import net.minecraft.server.world.ServerWorld;
 import net.minecraft.util.Identifier;
@@ -19,9 +19,10 @@ import java.util.function.Function;
  *  is stored inside the multi-blocks themselves, this manager will just access it for you. The reasoning behind this structuring is to make everything more
  *  readable.
  */
-public class CharcoalPitManager extends PersistentState implements WrappedQueueable {
+public class CharcoalPitManager extends PersistentState implements WrappedQueuer {
     public static final Identifier CHARCOAL_PIT_ID = new Identifier(Carbonize.MOD_ID, "charcoal_pit_data");
     private final List<CharcoalPitMultiblock> storage;
+
     private final TaskManager taskManager;
 
     public CharcoalPitManager() {
@@ -40,7 +41,7 @@ public class CharcoalPitManager extends PersistentState implements WrappedQueuea
             ifQueued(data::queue);
             executeQueue();
             if (data.canTick(world)) data.tick(world);
-            if (data.isOutdated()) storage.remove(i);
+            if (data.isInvalidated()) storage.remove(i);
         }
     }
 
@@ -107,7 +108,7 @@ public class CharcoalPitManager extends PersistentState implements WrappedQueuea
     }
 
     @Override
-    public TaskManager getManager() {
+    public TaskManager getQueuer() {
         return taskManager;
     }
 

@@ -7,6 +7,9 @@ import net.jmb19905.charcoal_pit.multiblock.CharcoalPitManager;
 import net.jmb19905.charcoal_pit.multiblock.CharcoalPitMultiblock;
 import net.jmb19905.recipe.BurnRecipe;
 import net.jmb19905.util.BlockHelper;
+import net.jmb19905.util.queue.Queuer;
+import net.jmb19905.util.queue.TaskManager;
+import net.jmb19905.util.queue.WrappedQueuer;
 import net.minecraft.block.Block;
 import net.minecraft.block.BlockState;
 import net.minecraft.block.Blocks;
@@ -31,8 +34,9 @@ import static net.jmb19905.charcoal_pit.block.CharringWoodBlock.STAGE;
  * this class does it get individually specific things like searching the recipe manager for its burn time and mimic model.
  * Everything else is handled by the multi-block and any tasks will be delegated from it.
  */
-public class CharringWoodBlockEntity extends BlockEntity implements RenderDataBlockEntity {
-    private static final CharcoalPitMultiblock DUMMY_DATA = CharcoalPitMultiblock.def(new BlockPos(0, 0, 0));
+public class CharringWoodBlockEntity extends BlockEntity implements RenderDataBlockEntity, WrappedQueuer {
+    private static final CharcoalPitMultiblock DUMMY_DATA = CharcoalPitMultiblock.def();
+    private final TaskManager taskManager;
     private List<BurnRecipe> recipeCache;
     private CharcoalPitManager managerCache;
     private CharcoalPitMultiblock dataCache;
@@ -42,6 +46,7 @@ public class CharringWoodBlockEntity extends BlockEntity implements RenderDataBl
 
     public CharringWoodBlockEntity(BlockPos pos, BlockState state) {
         super(CharcoalPitInit.CHARRING_WOOD_TYPE, pos, state);
+        this.taskManager = new TaskManager();
         this.recipeCache = null;
         this.managerCache = null;
         this.dataCache = null;
@@ -54,18 +59,28 @@ public class CharringWoodBlockEntity extends BlockEntity implements RenderDataBl
     public static void tick(World world, BlockPos pos, BlockState ignoredState, BlockEntity blockEntity) {
         CharringWoodBlockEntity entity = (CharringWoodBlockEntity) blockEntity;
         if (!world.isClient) {
-            if (entity.dataCache == null) {
+            entity.executeQueue();
+
+            if (entity.dataCache == null)
                 if (entity.getCharcoalPitData().exists(pos))
                     entity.dataCache = entity.getCharcoalPitData().get(pos);
                 else entity.sync(entity.getParent());
-            } else if (entity.dataCache.isOutdated()) {
-                if (entity.getCharcoalPitData().exists(pos))
-                    entity.dataCache = entity.getCharcoalPitData().get(pos);
-                else entity.sync(entity.getParent());
-            } else if (!entity.getCharcoalPitData().exists(pos)) {
+            else if (!entity.getCharcoalPitData().exists(pos))
                 entity.dataCache = entity.getCharcoalPitData().get(pos);
-            }
+            else if (entity.dataCache.isInvalidated())
+                if (entity.getCharcoalPitData().exists(pos))
+                    entity.dataCache = entity.getCharcoalPitData().get(pos);
+                else entity.sync(entity.getParent());
+
+
         }
+    }
+
+    /**
+        Queue properly and refactor queue to supply a super instance
+     */
+    public void invalidate() {
+        this.dataCache = null;
     }
 
     public CharcoalPitMultiblock getDataSafely() {
@@ -129,6 +144,11 @@ public class CharringWoodBlockEntity extends BlockEntity implements RenderDataBl
 
     public int getRemainingBurnTime() {
         return getDataSafely().getRemainingBurnTime();
+    }
+
+    @Override
+    public Queuer getQueuer() {
+        return taskManager;
     }
 
     @Nullable

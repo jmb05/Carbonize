@@ -3,7 +3,7 @@ package net.jmb19905.util.queue;
 import java.util.LinkedList;
 import java.util.List;
 
-public class TaskManager implements Queueable {
+public class TaskManager implements Queuer {
     private boolean isQueued;
     private boolean isExecuting;
     private final List<Runnable> tasks;
