@@ -21,10 +21,15 @@ public class BlockHelper {
         return stateHolder.getValue();
     }
 
+    public static boolean isFlammable(BlockState state) {
+        IFireAccess access = ((IFireAccess) Blocks.FIRE);
+        return access.carbonize$isFlammable(state) || access.carbonize$getSpreadChance(state) > 0 || state.isBurnable();
+    }
+
     public static boolean isNonFlammableFullCube(World world, BlockPos pos, BlockState state) {
         var isAir = state.isAir();
         var isCube = state.isFullCube(world, pos);
-        var isFlammable = ((IFireAccess) Blocks.FIRE).carbonize$isFlammable(state);
+        var isFlammable = isFlammable(state);
         return !isAir && isCube && !isFlammable;
     }
 }

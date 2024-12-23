@@ -29,6 +29,8 @@ public class CharringWoodBlockModel extends ForwardingBakedModel {
         if (blockEntity.isPresent()) {
             var medium = blockEntity.get().getRenderData();
             var model = MinecraftClient.getInstance().getBlockRenderManager().getModel(medium);
+            if (model instanceof ForwardingBakedModel wrappedModel && wrappedModel.getWrappedModel() != null)
+                model = wrappedModel.getWrappedModel();
             if (!model.equals(this)) {
                 model.emitBlockQuads(blockView, state, pos, randomSupplier, context);
                 return;
