@@ -34,9 +34,9 @@ import static net.jmb19905.charcoal_pit.block.CharringWoodBlock.STAGE;
  * this class does it get individually specific things like searching the recipe manager for its burn time and mimic model.
  * Everything else is handled by the multi-block and any tasks will be delegated from it.
  */
-public class CharringWoodBlockEntity extends BlockEntity implements RenderDataBlockEntity, WrappedQueuer {
+public class CharringWoodBlockEntity extends BlockEntity implements RenderDataBlockEntity, WrappedQueuer<CharringWoodBlockEntity> {
     private static final CharcoalPitMultiblock DUMMY_DATA = CharcoalPitMultiblock.def();
-    private final TaskManager taskManager;
+    private final TaskManager<CharringWoodBlockEntity> taskManager;
     private List<BurnRecipe> recipeCache;
     private CharcoalPitManager managerCache;
     private CharcoalPitMultiblock dataCache;
@@ -46,7 +46,7 @@ public class CharringWoodBlockEntity extends BlockEntity implements RenderDataBl
 
     public CharringWoodBlockEntity(BlockPos pos, BlockState state) {
         super(CharcoalPitInit.CHARRING_WOOD_TYPE, pos, state);
-        this.taskManager = new TaskManager();
+        this.taskManager = new TaskManager<>();
         this.recipeCache = null;
         this.managerCache = null;
         this.dataCache = null;
@@ -56,35 +56,65 @@ public class CharringWoodBlockEntity extends BlockEntity implements RenderDataBl
 
     }
 
-    public static void tick(World world, BlockPos pos, BlockState ignoredState, BlockEntity blockEntity) {
-        CharringWoodBlockEntity entity = (CharringWoodBlockEntity) blockEntity;
+    public void tick(World world, BlockPos pos, BlockState ignoredState) {
         if (!world.isClient) {
-            entity.executeQueue();
+            this.executeQueue(this);
 
-            if (entity.dataCache == null)
-                if (entity.getCharcoalPitData().exists(pos))
-                    entity.dataCache = entity.getCharcoalPitData().get(pos);
-                else entity.sync(entity.getParent());
-            else if (!entity.getCharcoalPitData().exists(pos))
-                entity.dataCache = entity.getCharcoalPitData().get(pos);
-            else if (entity.dataCache.isInvalidated())
-                if (entity.getCharcoalPitData().exists(pos))
-                    entity.dataCache = entity.getCharcoalPitData().get(pos);
-                else entity.sync(entity.getParent());
+            if (this.dataCache == null)
+                if (this.getCharcoalPitData().exists(pos))
+                    this.dataCache = this.getCharcoalPitData().get(pos);
+                else this.sync(this.getParent());
+            else if (this.dataCache.isInvalidated())
+                if (this.getCharcoalPitData().exists(pos))
+                    this.dataCache = this.getCharcoalPitData().get(pos);
+                else this.sync(this.getParent());
 
 
         }
     }
 
-    /**
-        Queue properly and refactor queue to supply a super instance
-     */
-    public void invalidate() {
-        this.dataCache = null;
+    public BlockState getParent() {
+        return parentState;
     }
 
-    public CharcoalPitMultiblock getDataSafely() {
-        return dataCache == null ? DUMMY_DATA : dataCache;
+    public BlockState getMedium() {
+        return mediumState;
+    }
+
+    public BlockState getFinal() {
+        return finalState;
+    }
+
+    /**
+     * This is specifically for debugging purposes - makes it easier to track the model when the calls are seperated.
+     */
+    public BlockState getMimicState() {
+        return switch (getCachedState().get(STAGE)) {
+            case IGNITING -> getParent();
+            case BURNING -> getMedium();
+            case CHARRING -> getFinal();
+        };
+    }
+
+    public BlockState getMimicData() {
+        return getMimicState();
+    }
+
+    @Override
+    public BlockState getRenderData() {
+        return getMimicState();
+    }
+
+    public void replaceData(CharcoalPitMultiblock data) {
+        this.dataCache = data;
+    }
+
+    public int getBlockCount() {
+        return getDataSafely().getBlockCount();
+    }
+
+    public int getRemainingBurnTime() {
+        return getDataSafely().getRemainingBurnTime();
     }
 
     public void sync(BlockState parent) {
@@ -110,44 +140,24 @@ public class CharringWoodBlockEntity extends BlockEntity implements RenderDataBl
         }
     }
 
-    public BlockState getParent() {
-        return parentState;
+    public void update() {
+        if (world != null) {
+            if (world instanceof ServerWorld serverWorld) {
+                serverWorld.getChunkManager().markForUpdate(pos);
+                getCharcoalPitData().queue();
+            }
+            this.markDirty();
+            this.world.updateListeners(pos, this.getCachedState(), this.getCachedState(), Block.NOTIFY_ALL);
+        }
     }
 
-    public BlockState getFinal() {
-        return finalState;
+    private CharcoalPitMultiblock getDataSafely() {
+        return dataCache == null ? DUMMY_DATA : dataCache;
     }
 
-    /**
-     * This is specifically for debugging purposes - makes it easier to track the model when the calls are seperated.
-     */
-    public BlockState getMimicState() {
-        return switch (getCachedState().get(STAGE)) {
-            case IGNITING -> parentState;
-            case BURNING -> mediumState;
-            case CHARRING -> finalState;
-        };
-    }
-
-    public BlockState getMimicData() {
-        return getMimicState();
-    }
 
     @Override
-    public BlockState getRenderData() {
-        return getMimicState();
-    }
-
-    public int getBlockCount() {
-        return getDataSafely().getBlockCount();
-    }
-
-    public int getRemainingBurnTime() {
-        return getDataSafely().getRemainingBurnTime();
-    }
-
-    @Override
-    public Queuer getQueuer() {
+    public Queuer<CharringWoodBlockEntity> getQueuer() {
         return taskManager;
     }
 
@@ -190,16 +200,5 @@ public class CharringWoodBlockEntity extends BlockEntity implements RenderDataBl
 
     private ServerWorld getServerWorld() {
         return (ServerWorld) world;
-    }
-
-    public void update() {
-        if (world != null) {
-            if (world instanceof ServerWorld serverWorld) {
-                serverWorld.getChunkManager().markForUpdate(pos);
-                getCharcoalPitData().queue();
-            }
-            this.markDirty();
-            this.world.updateListeners(pos, this.getCachedState(), this.getCachedState(), Block.NOTIFY_ALL);
-        }
     }
 }

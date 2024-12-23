@@ -2,6 +2,7 @@ package net.jmb19905.charcoal_pit.multiblock;
 
 import net.jmb19905.Carbonize;
 import net.jmb19905.util.BlockPosWrapper;
+import net.jmb19905.util.queue.Queuer;
 import net.jmb19905.util.queue.TaskManager;
 import net.jmb19905.util.queue.WrappedQueuer;
 import net.minecraft.nbt.NbtCompound;
@@ -19,28 +20,30 @@ import java.util.function.Function;
  *  is stored inside the multi-blocks themselves, this manager will just access it for you. The reasoning behind this structuring is to make everything more
  *  readable.
  */
-public class CharcoalPitManager extends PersistentState implements WrappedQueuer {
+public class CharcoalPitManager extends PersistentState implements WrappedQueuer<CharcoalPitManager> {
     public static final Identifier CHARCOAL_PIT_ID = new Identifier(Carbonize.MOD_ID, "charcoal_pit_data");
+
+    protected final ServerWorld world;
     private final List<CharcoalPitMultiblock> storage;
+    private final TaskManager<CharcoalPitManager> taskManager;
 
-    private final TaskManager taskManager;
-
-    public CharcoalPitManager() {
-        this(new ArrayList<>());
+    public CharcoalPitManager(ServerWorld world) {
+        this(world, new ArrayList<>());
     }
 
-    public CharcoalPitManager(List<CharcoalPitMultiblock> list) {
+    public CharcoalPitManager(ServerWorld world, List<CharcoalPitMultiblock> list) {
+        this.world = world;
         this.storage = list;
-        this.taskManager = new TaskManager();
+        this.taskManager = new TaskManager<>();
     }
 
     @SuppressWarnings("SuspiciousListRemoveInLoop")
-    public void tick(ServerWorld world) {
+    public void tick() {
         for (int i = 0; i < storage.size(); i++) {
             var data = storage.get(i);
-            ifQueued(data::queue);
-            executeQueue();
-            if (data.canTick(world)) data.tick(world);
+            ifQueued(() -> data.queue());
+            executeQueue(this);
+            if (data.canTick()) data.tick();
             if (data.isInvalidated()) storage.remove(i);
         }
     }
@@ -91,11 +94,11 @@ public class CharcoalPitManager extends PersistentState implements WrappedQueuer
             var dataExists = data != null;
             nbt.putBoolean(withIndex("NotNull", index), dataExists);
             if (dataExists) {
-                var positions = data.blockPositions;
+                var positions = data.positions();
                 nbt.putInt(withIndex("BlockPositionsSize", index), positions.size());
-                nbt.putInt(withIndex("MaxBurnTime", index), data.maxBurnTime);
-                nbt.putInt(withIndex("BurnTime", index), data.burnTime);
-                nbt.putBoolean(withIndex("Extinguished", index), data.extinguished);
+                nbt.putInt(withIndex("MaxBurnTime", index), data.maxBurnTime());
+                nbt.putInt(withIndex("BurnTime", index), data.burnTime());
+                nbt.putBoolean(withIndex("Extinguished", index), data.extinguished());
                 for (var pos = 0; pos < positions.size(); pos++) {
                     var posExists = positions.get(pos) != null;
                     nbt.putBoolean(withIndex(withIndex("BlockPositionNotNull", index), pos), posExists);
@@ -108,13 +111,13 @@ public class CharcoalPitManager extends PersistentState implements WrappedQueuer
     }
 
     @Override
-    public TaskManager getQueuer() {
+    public Queuer<CharcoalPitManager> getQueuer() {
         return taskManager;
     }
 
-    private static CharcoalPitManager createFromNbt(NbtCompound nbt) {
+    private static CharcoalPitManager createFromNbt(NbtCompound nbt, ServerWorld world) {
         var size = nbt.getInt("Size");
-        CharcoalPitManager data = new CharcoalPitManager(new ArrayList<>(size));
+        CharcoalPitManager data = new CharcoalPitManager(world, new ArrayList<>(size));
         for (int index = 0; index < size; index++) {
             if (nbt.getBoolean(withIndex("NotNull", index))) {
                 var blockPositionsSize = nbt.getInt(withIndex("BlockPositionsSize", index));
@@ -131,7 +134,7 @@ public class CharcoalPitManager extends PersistentState implements WrappedQueuer
         return data;
     }
     public static CharcoalPitManager get(ServerWorld world) {
-        CharcoalPitManager data = world.getPersistentStateManager().getOrCreate(CharcoalPitManager::createFromNbt, CharcoalPitManager::new, CHARCOAL_PIT_ID.toString());
+        CharcoalPitManager data = world.getPersistentStateManager().getOrCreate(nbt -> createFromNbt(nbt, world), () -> new CharcoalPitManager(world), CHARCOAL_PIT_ID.toString());
         data.markDirty();
         return data;
     }

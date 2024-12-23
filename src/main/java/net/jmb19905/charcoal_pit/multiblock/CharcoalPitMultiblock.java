@@ -25,6 +25,7 @@ import net.minecraft.util.math.Direction;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.ArrayList;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Consumer;
@@ -39,43 +40,35 @@ import static net.jmb19905.charcoal_pit.block.CharringWoodBlock.Stage.*;
  * Every {@link CharringWoodBlockEntity} must always try to upload its data to here for everything to work properly. This multi-block
  * must be the only one to either execute a task directly or delegate it to its block entities.
  *
+ * <p></p> NOTE: The world is accessed via the handler.
+ *
  */
-public class CharcoalPitMultiblock implements WrappedQueuer {
+public class CharcoalPitMultiblock implements WrappedQueuer<CharcoalPitMultiblock> {
     public static final Map<Direction, BooleanProperty> DIRECTION_PROPERTIES = ConnectingBlock.FACING_PROPERTIES.entrySet().stream().filter(entry -> entry.getKey() != Direction.DOWN).collect(Util.toMap());
     public static final BlockState FIRE_STATE = Blocks.FIRE.getDefaultState();
     public static final int SINGLE_BURN_TIME = 200;
 
-    /**
-     * Use {@link CharcoalPitMultiblock#getPitManager(ServerWorld)} to access it safely.
-     */
-    @Nullable private CharcoalPitManager pitManager;
-    @Nullable private ServerWorld world;
-    private final TaskManager taskManager;
-    public final List<BlockPosWrapper> blockPositions;
+    private final CharcoalPitManager pitManager;
+    private final TaskManager<CharcoalPitMultiblock> taskManager;
+    private final List<BlockPosWrapper> blockPositions;
     private final List<ChunkPos> chunkPositions;
-    public int maxBurnTime;
-    public int burnTime;
-    public boolean extinguished;
+    private int maxBurnTime;
+    private int burnTime;
+    private boolean extinguished;
 
-    public CharcoalPitMultiblock(@Nullable CharcoalPitManager charcoalPitManager, int maxBurnTime, int burnTime, boolean extinguished) {
+    public CharcoalPitMultiblock(@Nullable CharcoalPitManager charcoalPitManager, List<BlockPos> blockPositions,
+                                 int maxBurnTime, int burnTime, boolean extinguished) {
         this.pitManager = charcoalPitManager;
-        this.world = null;
-        this.taskManager = new TaskManager();
-        this.blockPositions = new ArrayList<>();
-        this.chunkPositions = new ArrayList<>();
+        this.taskManager = new TaskManager<>();
+        this.blockPositions = new LinkedList<>(blockPositions.stream().map(BlockPosWrapper::new).toList());
+        this.chunkPositions = new LinkedList<>();
         this.maxBurnTime = maxBurnTime;
         this.burnTime = burnTime;
         this.extinguished = extinguished;
     }
 
-    public CharcoalPitMultiblock(CharcoalPitManager charcoalPitManager, List<BlockPos> blockPositions, int maxBurnTime, int burnTime, boolean extinguished) {
-        this(charcoalPitManager, maxBurnTime, burnTime, extinguished);
-        this.appendBlockPositions(blockPositions.stream().map(BlockPosWrapper::new).toList());
-    }
-
     public CharcoalPitMultiblock(CharcoalPitManager charcoalPitManager, BlockPos pos, int maxBurnTime, int burnTime, boolean extinguished) {
-        this(charcoalPitManager, maxBurnTime, burnTime, extinguished);
-        appendBlockPositions(new BlockPosWrapper(pos));
+        this(charcoalPitManager, List.of(pos), maxBurnTime, burnTime, extinguished);
     }
 
     public static CharcoalPitMultiblock def() {
@@ -87,18 +80,16 @@ public class CharcoalPitMultiblock implements WrappedQueuer {
      * everything to execute here. Theoretically from here, multi-threading support could be added with a couple changes. Just as long
      * as world modifications are queued properly.
      */
-    public void tick(ServerWorld world) {
-        cacheWorld(world);
-
+    public void tick() {
         burnTime++;
 
         testSides();
 
-        executeQueue();
+        executeQueue(this);
 
-        if (burnTime == maxBurnTime / 3)
+        if (burnTime == maxBurnTime / 6)
             update();
-        else if (burnTime == maxBurnTime * 2/3)
+        else if (burnTime == maxBurnTime * 4/6)
             update();
         else if (burnTime >= maxBurnTime)
             update();
@@ -110,30 +101,50 @@ public class CharcoalPitMultiblock implements WrappedQueuer {
     }
 
     /**
-     * This is very important. This checks if ALL the chunks are loaded. This way ticking could be ignored if it isn't.
-     * This is useful for preventing:
+     * Ensures ALL the chunks are tickable. Prevents unecessary ticking & syncs the entire charcoal pit.
+     * <p></p> This is useful for preventing:
      * <p> 1 - Charcoal pits falling out of sync on chunk borders.
      * <p> 2. - Charcoal pits ticking, setting blockStates and other things it SHOULD NOT BE DOING if its chunks aren't loaded.
-     * @param world  world requires a supplied instance as it could be called before ticking even begins.
      */
-    public boolean canTick(ServerWorld world) {
-        return chunkPositions.stream().allMatch(world::shouldTick);
+    public boolean canTick() {
+        return this.getWorld() != null && chunkPositions.stream().allMatch(getWorld()::shouldTick);
     }
 
-    public int getRemainingBurnTime() {
-        return maxBurnTime - burnTime;
+    public ServerWorld getWorld() {
+        return pitManager.world;
     }
+
+    public CharringWoodBlock.Stage getStage() {
+        if (burnTime >= maxBurnTime * 4/6)
+            return CHARRING;
+        else if (burnTime >= maxBurnTime / 6)
+            return BURNING;
+        else return IGNITING;
+    }
+
+    public List<BlockPosWrapper> positions() {
+        return blockPositions;
+    }
+
+    public int maxBurnTime() {
+        return maxBurnTime;
+    }
+
+    public int burnTime() {
+        return burnTime;
+    }
+
+    public boolean extinguished() {
+        return extinguished;
+    }
+
 
     public int getBlockCount() {
         return blockPositions.size();
     }
 
-    public CharringWoodBlock.Stage getStage() {
-        if (burnTime >= maxBurnTime * 2/3)
-            return CHARRING;
-        else if (burnTime >= maxBurnTime / 3)
-            return BURNING;
-        else return IGNITING;
+    public int getRemainingBurnTime() {
+        return maxBurnTime - burnTime;
     }
 
     public void invalidate() {
@@ -154,17 +165,17 @@ public class CharcoalPitMultiblock implements WrappedQueuer {
         return blockPositions.stream().anyMatch(blockPosition -> blockPosition.equals(pos));
     }
 
-    public void appendBlockPositions(BlockPosWrapper pos) {
+    public void add(BlockPosWrapper pos) {
         if (blockPositions.stream().noneMatch(blockPosition -> blockPosition.equals(pos)))
             addPosition(pos);
     }
 
-    public void appendBlockPositions(List<BlockPosWrapper> wrappers) {
-        wrappers.forEach(this::appendBlockPositions);
+    public void add(List<BlockPosWrapper> wrappers) {
+        wrappers.forEach(this::add);
     }
 
     public void consume(CharcoalPitMultiblock data) {
-        appendBlockPositions(data.blockPositions);
+        add(data.blockPositions);
         var totalBlockCount = getBlockCount();
         this.maxBurnTime = calculateBurnTime(this.maxBurnTime, data.maxBurnTime, totalBlockCount);
         this.burnTime =  calculateBurnTime(this.burnTime, data.burnTime, totalBlockCount);
@@ -177,16 +188,8 @@ public class CharcoalPitMultiblock implements WrappedQueuer {
         queue(this::update);
     }
 
-    /**
-     * I need to stop being a lazy arse and just pass the world instance in the constructor to avoid this bullshit.
-     */
-    public void cacheWorld(ServerWorld world) {
-        if (this.world == null)
-            this.world = world;
-    }
-
     @Override
-    public TaskManager getQueuer() {
+    public Queuer<CharcoalPitMultiblock> getQueuer() {
         return taskManager;
     }
 
@@ -204,23 +207,23 @@ public class CharcoalPitMultiblock implements WrappedQueuer {
         return false;
     }
 
+
     private void testUnity() {
         var blockCount = getBlockCount();
 
         if (blockCount <= 1) return;
 
-        var testedPositions = collectExisting(world, blockPositions.get(0).expose());
+        var testedPositions = collectExisting(getWorld(), blockPositions.get(0).expose());
         var testedBlockCount = testedPositions.size();
 
         if (testedBlockCount >= blockCount) return;
 
-        var manager = getPitManager(world);
         var remainingBlockCount = getBlockCount() - testedBlockCount;
         double testedRatio = (double) testedBlockCount / blockCount;
         double remainingRatio = (double) remainingBlockCount / blockCount;
 
         var newMultiBlock = new CharcoalPitMultiblock(
-                manager,
+                pitManager,
                 testedPositions,
                 (int) (maxBurnTime * testedRatio),
                 (int) (burnTime * testedRatio),
@@ -228,14 +231,12 @@ public class CharcoalPitMultiblock implements WrappedQueuer {
         );
 
 
-        newMultiBlock.cacheWorld(world);
 
-        manager.add(newMultiBlock);
+        pitManager.add(newMultiBlock);
 
         testedPositions.forEach(pos -> {
             removePosition(new BlockPosWrapper(pos));
-            assert world != null;
-            world.getBlockEntity(pos, CHARRING_WOOD_TYPE).ifPresent(CharringWoodBlockEntity::invalidate);
+            getWorld().getBlockEntity(pos, CHARRING_WOOD_TYPE).ifPresent(entity -> entity.queue(() -> entity.replaceData(newMultiBlock)));
         });
 
         this.maxBurnTime = (int) (maxBurnTime * remainingRatio);
@@ -253,29 +254,23 @@ public class CharcoalPitMultiblock implements WrappedQueuer {
         });
     }
 
-    /**
-     * Alright, so I need to queue this or its blockstate updates because if it's done here, the models break. If it's done
-     * in the block entity, this multiblock does not update properly (not fast enough).
-     */
     private void testSide(BlockPos pos, Direction dir, BlockState ignoredState, CharringWoodBlockEntity entity) {
-        assert world != null;
-
         var sidePos = pos.offset(dir);
-        var sideState = world.getBlockState(sidePos);
+        var sideState = getWorld().getBlockState(sidePos);
         // Checks if a block is not flammable and a full cube to determine if it's a valid wall; replaces 'charcoal_pile_valid_wall'.
-        if (BlockHelper.isNonFlammableFullCube(world, pos, sideState)) return;
+        if (BlockHelper.isNonFlammableFullCube(getWorld(), pos, sideState)) return;
 
         // Terminate loop if the side pos is already a member of this multi-block - avoids unecessary checks. One of the multi-block-exclusive optimisations.
         if (hasPosition(sidePos)) return;
 
         if (sideState.isOf(CHARRING_WOOD)) {
-            queue(() -> getPitManager(world).merge(pos, sidePos));
+            queue(() -> pitManager.merge(pos, sidePos));
         } else if (sideState.isIn(Carbonize.CHARCOAL_PILE_VALID_FUEL)) {
-            var parent = world.getBlockState(sidePos);
+            var parent = getWorld().getBlockState(sidePos);
             //This is an example of a delegation. I have to do this to sync the models properly and I have no idea why, but it just works.
             entity.queue(() -> {
-                world.setBlockState(sidePos, CHARRING_WOOD.getDefaultState());
-                world.getBlockEntity(sidePos, CHARRING_WOOD_TYPE).ifPresent(blockEntity -> blockEntity.sync(parent));
+                getWorld().setBlockState(sidePos, CHARRING_WOOD.getDefaultState());
+                getWorld().getBlockEntity(sidePos, CHARRING_WOOD_TYPE).ifPresent(blockEntity -> blockEntity.sync(parent));
             });
         } else if (entity.getCachedState().get(STAGE).ordinal() > IGNITING.ordinal()) {
             if (sideState.isReplaceable() || sideState.isAir()) {
@@ -283,26 +278,25 @@ public class CharcoalPitMultiblock implements WrappedQueuer {
                 if (dir != Direction.UP)
                     fireState = FIRE_STATE.with(DIRECTION_PROPERTIES.get(dir.getOpposite()), true);
                 else fireState = FIRE_STATE;
-                world.setBlockState(sidePos, fireState);
-            } else if (world.getRandom().nextInt(100) == 0) {
+                getWorld().setBlockState(sidePos, fireState);
+            } else if (getWorld().getRandom().nextInt(100) == 0) {
                 if (sideState.isOf(Blocks.TNT)) {
-                    TntBlock.primeTnt(world, sidePos);
-                    world.setBlockState(pos, Blocks.AIR.getDefaultState());
-                } else if (!sideState.isFullCube(world, pos) && !sideState.isIn(BlockTags.FIRE)) {
-                    world.breakBlock(pos, false);
-                    world.setBlockState(pos, FIRE_STATE);
+                    TntBlock.primeTnt(getWorld(), sidePos);
+                    getWorld().setBlockState(pos, Blocks.AIR.getDefaultState());
+                } else if (!sideState.isFullCube(getWorld(), pos) && !sideState.isIn(BlockTags.FIRE)) {
+                    getWorld().breakBlock(pos, false);
+                    getWorld().setBlockState(pos, FIRE_STATE);
                 }
             }
         }
     }
 
     private void update() {
-        assert world != null;
         if (burnTime >= maxBurnTime) {
-            accessMembers(ctx -> world.setBlockState(ctx.pos(), ctx.entity().getFinal()));
+            accessMembers(ctx -> getWorld().setBlockState(ctx.pos(), ctx.entity().getFinal()));
             if (!extinguished)
                 if (!blockPositions.isEmpty()) {
-                    world.playSound(null, blockPositions.get(world.getRandom().nextInt(blockPositions.size())).expose(), SoundEvents.BLOCK_FIRE_EXTINGUISH, SoundCategory.BLOCKS, 2f, 1f);
+                    getWorld().playSound(null, blockPositions.get(getWorld().getRandom().nextInt(blockPositions.size())).expose(), SoundEvents.BLOCK_FIRE_EXTINGUISH, SoundCategory.BLOCKS, 2f, 1f);
                     extinguished = true;
                 }
         } else if (burnTime >= maxBurnTime * 2/3)
@@ -316,8 +310,7 @@ public class CharcoalPitMultiblock implements WrappedQueuer {
         accessMembers(ctx -> {
             var stage = getStage();
             if (!ctx.state().get(STAGE).equals(stage)) {
-                assert world != null;
-                world.setBlockState(ctx.pos(), ctx.state().with(STAGE, stage));
+                getWorld().setBlockState(ctx.pos(), ctx.state().with(STAGE, stage));
                 ctx.entity().update();
             }
         });
@@ -326,10 +319,9 @@ public class CharcoalPitMultiblock implements WrappedQueuer {
     private void accessMembers(Consumer<CharcoalPitContext> consumer) {
         for (BlockPosWrapper blockPosition : blockPositions) {
             var exposedPos = blockPosition.expose();
-            assert world != null;
-            var state = world.getBlockState(exposedPos);
+            var state = getWorld().getBlockState(exposedPos);
             if (state.isOf(CHARRING_WOOD)) {
-                var entity = world.getBlockEntity(exposedPos, CHARRING_WOOD_TYPE);
+                var entity = getWorld().getBlockEntity(exposedPos, CHARRING_WOOD_TYPE);
                 consumer.accept(new CharcoalPitContext(exposedPos, state, entity.orElseThrow()));
             } else {
                 var blockCount = getBlockCount();
@@ -353,13 +345,6 @@ public class CharcoalPitMultiblock implements WrappedQueuer {
         blockPositions.remove(posWrapper);
         if (blockPositions.stream().noneMatch(pos -> chunkPos.equals(new ChunkPos(pos.expose()))))
             chunkPositions.remove(chunkPos);
-    }
-
-    private CharcoalPitManager getPitManager(ServerWorld world) {
-        if (pitManager == null) {
-            pitManager = CharcoalPitManager.get(world);
-        } else pitManager.markDirty();
-        return pitManager;
     }
 
     public static List<BlockPos> collectFuels(ServerWorld world, BlockPos startingPos, Direction directionFrom) {

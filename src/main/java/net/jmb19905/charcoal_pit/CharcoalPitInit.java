@@ -51,7 +51,7 @@ public class CharcoalPitInit {
         FlammableBlockRegistry.getDefaultInstance().add(CHARRING_WOOD, 15, 30);
         FlammableBlockRegistry.getDefaultInstance().add(CHARRING_STACK, 15, 30);
 
-        ServerTickEvents.START_WORLD_TICK.register(world -> CharcoalPitManager.get(world).tick(world));
+        ServerTickEvents.START_WORLD_TICK.register(world -> CharcoalPitManager.get(world).tick());
         UseBlockCallback.EVENT.register((player, world, hand, hitResult) -> {
             if (!CONFIG.charcoalPile()) return ActionResult.PASS;
             ItemStack stack = player.getStackInHand(hand);

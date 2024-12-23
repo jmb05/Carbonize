@@ -2,12 +2,13 @@ package net.jmb19905.util.queue;
 
 import java.util.LinkedList;
 import java.util.List;
+import java.util.function.Consumer;
 
-public class TaskManager implements Queuer {
+public class TaskManager <T> implements Queuer<T> {
     private boolean isQueued;
     private boolean isExecuting;
-    private final List<Runnable> tasks;
-    private final List<Runnable> insuredTasks;
+    private final List<Consumer<T>> tasks;
+    private final List<Consumer<T>> insuredTasks;
 
     public TaskManager() {
         isQueued = false;
@@ -17,7 +18,7 @@ public class TaskManager implements Queuer {
 
     }
 
-    public void executeQueue() {
+    public void executeQueue(T parent) {
         synchronized (this) {
             if (isQueued) {
                 isExecuting = true;
@@ -27,7 +28,7 @@ public class TaskManager implements Queuer {
                     insuredTasks.clear();
                 }
                 if (!tasks.isEmpty()) {
-                    tasks.forEach(Runnable::run);
+                    tasks.forEach(consumer -> consumer.accept(parent));
                     tasks.clear();
                 }
                 isExecuting = false;
@@ -41,9 +42,9 @@ public class TaskManager implements Queuer {
     }
 
     @Override
-    public void ifQueued(Runnable runnable) {
+    public void ifQueued(Consumer<T> consumer) {
         if (isQueued())
-            queue(runnable);
+            queue(consumer);
     }
 
     @Override
@@ -52,11 +53,11 @@ public class TaskManager implements Queuer {
     }
 
     @Override
-    public void queue(Runnable runnable) {
+    public void queue(Consumer<T> consumer) {
         isQueued = true;
         if (isExecuting)
-            insuredTasks.add(runnable);
-        else tasks.add(runnable);
+            insuredTasks.add(consumer);
+        else tasks.add(consumer);
     }
 
     @Override

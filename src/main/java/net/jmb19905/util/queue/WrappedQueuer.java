@@ -1,11 +1,13 @@
 package net.jmb19905.util.queue;
 
-public interface WrappedQueuer extends Queuer {
-    Queuer getQueuer();
+import java.util.function.Consumer;
+
+public interface WrappedQueuer <T> extends Queuer<T> {
+    Queuer<T> getQueuer();
 
     @Override
-    default void executeQueue() {
-        getQueuer().executeQueue();
+    default void executeQueue(T parent) {
+        getQueuer().executeQueue(parent);
     }
 
     @Override
@@ -14,8 +16,8 @@ public interface WrappedQueuer extends Queuer {
     }
 
     @Override
-    default void ifQueued(Runnable runnable) {
-        getQueuer().ifQueued(runnable);
+    default void ifQueued(Consumer<T> consumer) {
+        getQueuer().ifQueued(consumer);
     }
 
     @Override
@@ -24,8 +26,8 @@ public interface WrappedQueuer extends Queuer {
     }
 
     @Override
-    default void queue(Runnable runnable) {
-        getQueuer().queue(runnable);
+    default void queue(Consumer<T> consumer) {
+        getQueuer().queue(consumer);
     }
 
     @Override

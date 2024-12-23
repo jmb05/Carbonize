@@ -81,7 +81,7 @@ public class CharringWoodBlock extends BlockWithEntity {
     @Nullable
     @Override
     public <T extends BlockEntity> BlockEntityTicker<T> getTicker(World world, BlockState state, BlockEntityType<T> type) {
-        return checkType(type, CharcoalPitInit.CHARRING_WOOD_TYPE, CharringWoodBlockEntity::tick);
+        return checkType(type, CharcoalPitInit.CHARRING_WOOD_TYPE, (serverWorld, pos, blockState, blockEntity) -> blockEntity.tick(serverWorld, pos, blockState));
     }
 
     @SuppressWarnings("deprecation")

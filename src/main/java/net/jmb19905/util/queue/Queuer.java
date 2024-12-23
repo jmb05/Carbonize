@@ -1,15 +1,23 @@
 package net.jmb19905.util.queue;
 
-public interface Queuer {
-    void executeQueue();
+import java.util.function.Consumer;
+
+public interface Queuer <T>{
+    void executeQueue(T parent);
 
     boolean isQueued();
 
-    void ifQueued(Runnable runnable);
+    void ifQueued(Consumer<T> consumer);
+    default void ifQueued(Runnable runnable) {
+        ifQueued(t -> runnable.run());
+    }
 
     void queue();
 
-    void queue(Runnable runnable);
+    void queue(Consumer<T> consumer);
+    default void queue(Runnable consumer) {
+        queue(t -> consumer.run());
+    }
 
     void cancelQueue();
 }
