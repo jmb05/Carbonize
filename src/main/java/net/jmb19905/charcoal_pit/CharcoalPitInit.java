@@ -1,6 +1,5 @@
 package net.jmb19905.charcoal_pit;
 
-import net.fabricmc.fabric.api.event.lifecycle.v1.ServerTickEvents;
 import net.fabricmc.fabric.api.event.player.UseBlockCallback;
 import net.fabricmc.fabric.api.item.v1.FabricItemSettings;
 import net.fabricmc.fabric.api.object.builder.v1.block.FabricBlockSettings;
@@ -9,7 +8,6 @@ import net.fabricmc.fabric.api.registry.FlammableBlockRegistry;
 import net.jmb19905.block.StackBlock;
 import net.jmb19905.charcoal_pit.block.CharringWoodBlock;
 import net.jmb19905.charcoal_pit.block.CharringWoodBlockEntity;
-import net.jmb19905.charcoal_pit.multiblock.CharcoalPitManager;
 import net.jmb19905.charcoal_pit.multiblock.CharcoalPitMultiblock;
 import net.minecraft.block.Block;
 import net.minecraft.block.BlockState;
@@ -51,7 +49,6 @@ public class CharcoalPitInit {
         FlammableBlockRegistry.getDefaultInstance().add(CHARRING_WOOD, 15, 30);
         FlammableBlockRegistry.getDefaultInstance().add(CHARRING_STACK, 15, 30);
 
-        ServerTickEvents.START_WORLD_TICK.register(world -> CharcoalPitManager.get(world).tick());
         UseBlockCallback.EVENT.register((player, world, hand, hitResult) -> {
             if (!CONFIG.charcoalPile()) return ActionResult.PASS;
             ItemStack stack = player.getStackInHand(hand);
