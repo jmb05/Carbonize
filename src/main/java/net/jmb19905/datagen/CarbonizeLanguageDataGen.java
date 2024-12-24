@@ -37,9 +37,10 @@ public class CarbonizeLanguageDataGen extends FabricLanguageProvider {
         translationBuilder.add("text.jade.carbonize.charring_wood.size", "Size: %d");
         translationBuilder.add("text.jade.carbonize.charring_wood.stage", "Stage: %d");
         translationBuilder.add("text.jade.carbonize.charring_wood.remaining_burn_time", "Remaining Time: %d");
-        translationBuilder.add("config.jade.carbonize.show_size", "Show Size");
-        translationBuilder.add("config.jade.carbonize.show_stage", "Show Stage");
-        translationBuilder.add("config.jade.carbonize.show_remaining_burn_time", "Show Remaining Time");
+        translationBuilder.add("config.jade.plugin_carbonize.plugin", "Enable Plugin");
+        translationBuilder.add("config.jade.plugin_carbonize.show_size", "Show Size");
+        translationBuilder.add("config.jade.plugin_carbonize.show_stage", "Show Stage");
+        translationBuilder.add("config.jade.plugin_carbonize.show_remaining_burn_time", "Show Remaining Time");
 
     }
 }
