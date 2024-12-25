@@ -1,25 +1,23 @@
 package net.jmb19905;
 
 import net.fabricmc.api.ModInitializer;
-import net.fabricmc.fabric.api.event.player.UseBlockCallback;
 import net.fabricmc.fabric.api.item.v1.FabricItemSettings;
 import net.fabricmc.fabric.api.itemgroup.v1.ItemGroupEvents;
 import net.fabricmc.fabric.api.object.builder.v1.block.FabricBlockSettings;
-import net.fabricmc.fabric.api.object.builder.v1.block.entity.FabricBlockEntityTypeBuilder;
 import net.fabricmc.fabric.api.registry.FlammableBlockRegistry;
 import net.fabricmc.fabric.api.registry.FuelRegistry;
 import net.jmb19905.block.*;
-import net.jmb19905.blockEntity.CharringWoodBlockEntity;
+import net.jmb19905.charcoal_pit.CharcoalPitInit;
 import net.jmb19905.config.CarbonizeConfig;
 import net.jmb19905.recipe.BurnRecipe;
 import net.jmb19905.recipe.BurnRecipeSerializer;
-import net.jmb19905.util.ObjectHolder;
 import net.minecraft.block.*;
-import net.minecraft.block.entity.BlockEntityType;
 import net.minecraft.block.enums.Instrument;
 import net.minecraft.block.piston.PistonBehavior;
-import net.minecraft.entity.player.PlayerEntity;
-import net.minecraft.item.*;
+import net.minecraft.item.BlockItem;
+import net.minecraft.item.BoneMealItem;
+import net.minecraft.item.Item;
+import net.minecraft.item.ItemGroups;
 import net.minecraft.recipe.Recipe;
 import net.minecraft.recipe.RecipeType;
 import net.minecraft.registry.Registries;
@@ -28,13 +26,7 @@ import net.minecraft.registry.RegistryKeys;
 import net.minecraft.registry.tag.BlockTags;
 import net.minecraft.registry.tag.TagKey;
 import net.minecraft.sound.BlockSoundGroup;
-import net.minecraft.sound.SoundCategory;
-import net.minecraft.sound.SoundEvents;
-import net.minecraft.util.ActionResult;
-import net.minecraft.util.Hand;
 import net.minecraft.util.Identifier;
-import net.minecraft.util.hit.HitResult;
-import net.minecraft.util.math.BlockPos;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -83,8 +75,6 @@ public class Carbonize implements ModInitializer {
 	public static final Block ASH_BLOCK = new FallingBlock(FabricBlockSettings.create()
 			.mapColor(MapColor.GRAY)
 			.sounds(BlockSoundGroup.SAND));
-	public static final Block CHARRING_WOOD = new CharringWoodBlock(FabricBlockSettings.create().nonOpaque().luminance(15).sounds(BlockSoundGroup.WOOD).dropsNothing());
-	public static final Block CHARRING_STACK = new StackBlock(FabricBlockSettings.create().nonOpaque());
 	public static final Block CHARCOAL_BLOCK = new Block(FabricBlockSettings.copy(Blocks.COAL_BLOCK));
 
 	public static final BlockItem WOOD_STACK_ITEM = new BlockItem(WOOD_STACK, new FabricItemSettings());
@@ -98,28 +88,21 @@ public class Carbonize implements ModInitializer {
 
 	public static final BlockItem ASH_LAYER_ITEM = new BlockItem(ASH_LAYER, new FabricItemSettings());
 	public static final BlockItem ASH_BLOCK_ITEM = new BlockItem(ASH_BLOCK, new FabricItemSettings());
-	public static final BlockItem CHARRING_WOOD_ITEM = new BlockItem(CHARRING_WOOD, new FabricItemSettings());
 	public static final BlockItem CHARCOAL_BLOCK_ITEM = new BlockItem(CHARCOAL_BLOCK, new FabricItemSettings());
 
 	public static final Item ASH = new BoneMealItem(new FabricItemSettings());
 
-	public static final Identifier CHARRING_WOOD_ID = new Identifier(MOD_ID, "charring_wood");
-	public static final BlockEntityType<CharringWoodBlockEntity> CHARRING_WOOD_TYPE = Registry.register(
-			Registries.BLOCK_ENTITY_TYPE,
-			CHARRING_WOOD_ID,
-			FabricBlockEntityTypeBuilder.create(CharringWoodBlockEntity::new).addBlock(CHARRING_WOOD).build()
-	);
-
 	public static final RecipeType<BurnRecipe> BURN_RECIPE_TYPE = registerRecipeType(BurnRecipeSerializer.ID);
 
 	public static final TagKey<Block> CHARCOAL_BLOCKS = TagKey.of(RegistryKeys.BLOCK, new Identifier(MOD_ID, "charcoal_blocks"));
-	public static final TagKey<Block> CHARCOAL_PILE_VALID_WALL = TagKey.of(RegistryKeys.BLOCK, new Identifier(MOD_ID, "charcoal_pile_valid_wall"));
 	public static final TagKey<Block> CHARCOAL_PILE_VALID_FUEL = TagKey.of(RegistryKeys.BLOCK, new Identifier(MOD_ID, "charcoal_pile_valid_fuel"));
 	public static final TagKey<Item> DAMAGE_IGNITERS = TagKey.of(RegistryKeys.ITEM, new Identifier(MOD_ID, "damage_igniters"));
 	public static final TagKey<Item> CONSUME_IGNITERS = TagKey.of(RegistryKeys.ITEM, new Identifier(MOD_ID, "consume_igniters"));
 	public static final TagKey<Item> IGNITERS = TagKey.of(RegistryKeys.ITEM, new Identifier(MOD_ID, "igniters"));
 	@Override
 	public void onInitialize() {
+		CharcoalPitInit.init();
+
 		Registry.register(Registries.BLOCK, new Identifier(MOD_ID, "wood_stack"), WOOD_STACK);
 		Registry.register(Registries.BLOCK, new Identifier(MOD_ID, "charcoal_stack"), CHARCOAL_STACK);
 		Registry.register(Registries.BLOCK, new Identifier(MOD_ID, "charcoal_log"), CHARCOAL_LOG);
@@ -131,8 +114,6 @@ public class Carbonize implements ModInitializer {
 
 		Registry.register(Registries.BLOCK, new Identifier(MOD_ID, "ash_layer"), ASH_LAYER);
 		Registry.register(Registries.BLOCK, new Identifier(MOD_ID, "ash_block"), ASH_BLOCK);
-		Registry.register(Registries.BLOCK, new Identifier(MOD_ID, "charring_wood"), CHARRING_WOOD);
-		Registry.register(Registries.BLOCK, new Identifier(MOD_ID, "charring_stack"), CHARRING_STACK);
 		Registry.register(Registries.BLOCK, new Identifier(MOD_ID, "charcoal_block"), CHARCOAL_BLOCK);
 		LOGGER.debug("Registered Blocks");
 
@@ -147,7 +128,6 @@ public class Carbonize implements ModInitializer {
 
 		Registry.register(Registries.ITEM, new Identifier(MOD_ID, "ash_layer"), ASH_LAYER_ITEM);
 		Registry.register(Registries.ITEM, new Identifier(MOD_ID, "ash_block"), ASH_BLOCK_ITEM);
-		Registry.register(Registries.ITEM, new Identifier(MOD_ID, "charring_wood"), CHARRING_WOOD_ITEM);
 		Registry.register(Registries.ITEM, new Identifier(MOD_ID, "charcoal_block"), CHARCOAL_BLOCK_ITEM);
 
 		Registry.register(Registries.ITEM, new Identifier(MOD_ID, "ash"), ASH);
@@ -164,8 +144,6 @@ public class Carbonize implements ModInitializer {
 		FlammableBlockRegistry.getDefaultInstance().add(CHARCOAL_LOG, 15, 30);
 		FlammableBlockRegistry.getDefaultInstance().add(CHARCOAL_STACK, 15, 30);
 		FlammableBlockRegistry.getDefaultInstance().add(WOOD_STACK, 15, 30);
-		FlammableBlockRegistry.getDefaultInstance().add(CHARRING_WOOD, 15, 30);
-		FlammableBlockRegistry.getDefaultInstance().add(CHARRING_STACK, 15, 30);
 
 
 		if (CONFIG.moreBurnableBlocks()) {
@@ -214,42 +192,6 @@ public class Carbonize implements ModInitializer {
 		});
 
 		ItemGroupEvents.modifyEntriesEvent(ItemGroups.INGREDIENTS).register(content -> content.add(ASH));
-
-		UseBlockCallback.EVENT.register((player, world, hand, hitResult) -> {
-			if (!CONFIG.charcoalPile()) return ActionResult.PASS;
-			ItemStack stack = player.getStackInHand(hand);
-			if (!world.isClient && stack.isIn(IGNITERS) && player.isSneaking()) {
-				if (hitResult.getType() == HitResult.Type.BLOCK) {
-					BlockPos pos = hitResult.getBlockPos();
-					ObjectHolder<Integer> burnTimeAverage = new ObjectHolder<>(0);
-					int blockCount = CharringWoodBlock.checkValid(world, pos, hitResult.getSide(), burnTimeAverage);
-					if (blockCount >= CONFIG.charcoalPileMinimumCount() && handleIgnition(stack, player, hand)) {
-						BlockState parentState = world.getBlockState(pos);
-						burnTimeAverage.updateValue(i -> i / blockCount);
-						world.playSound(null, pos, SoundEvents.ITEM_FIRECHARGE_USE, SoundCategory.BLOCKS, 2, 1);
-						world.setBlockState(pos, CHARRING_WOOD.getDefaultState().with(CharringWoodBlock.STAGE, CharringWoodBlock.Stage.IGNITING));
-						world.getBlockEntity(pos, CHARRING_WOOD_TYPE).ifPresent(blockEntity -> blockEntity.createData(blockCount, burnTimeAverage.getValue(), parentState));
-						return ActionResult.CONSUME;
-					}
-				}
-			}
-			return ActionResult.PASS;
-		});
-
-	}
-
-	private static boolean handleIgnition(ItemStack stack, PlayerEntity player, Hand hand) {
-		if (stack.isIn(DAMAGE_IGNITERS)) {
-			stack.damage(stack.getDamage() + 1, player, p -> p.sendToolBreakStatus(hand));
-			return true;
-		}
-
-		if (stack.isIn(CONSUME_IGNITERS)) {
-			stack.decrement(1);
-			return true;
-		}
-
-		return false;
 	}
 
 	@SuppressWarnings("SameParameterValue")

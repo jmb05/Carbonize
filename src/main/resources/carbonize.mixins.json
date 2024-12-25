@@ -6,6 +6,8 @@
     "FallingBlockEntityMixin",
     "FenceMixin",
     "FireMixin",
+    "IFireAccess",
+    "ServerWorldMixin",
     "StairsBlockMixin"
   ],
   "injectors": {

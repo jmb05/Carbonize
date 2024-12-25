@@ -15,13 +15,13 @@
 	"environment": "*",
 	"entrypoints": {
 		"main": [
-          "net.jmb19905.Carbonize"
+			"net.jmb19905.Carbonize"
 		],
 		"client": [
 			"net.jmb19905.CarbonizeClient"
 		],
 		"fabric-datagen": [
-          "net.jmb19905.datagen.CarbonizeDataGenerator"
+			"net.jmb19905.datagen.CarbonizeDataGenerator"
 		],
 		"jade": [
 			"net.jmb19905.compat.CarbonizeJadeCompat"

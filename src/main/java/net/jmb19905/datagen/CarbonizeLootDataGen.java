@@ -4,6 +4,7 @@ import net.fabricmc.fabric.api.datagen.v1.FabricDataOutput;
 import net.fabricmc.fabric.api.datagen.v1.provider.FabricBlockLootTableProvider;
 import net.jmb19905.Carbonize;
 import net.jmb19905.block.AshBlock;
+import net.jmb19905.charcoal_pit.CharcoalPitInit;
 import net.minecraft.block.SlabBlock;
 import net.minecraft.block.enums.SlabType;
 import net.minecraft.enchantment.Enchantments;
@@ -55,6 +56,6 @@ public class CarbonizeLootDataGen extends FabricBlockLootTableProvider {
                 )
         ));
         this.addDrop(Carbonize.CHARCOAL_BLOCK);
-        this.excludeFromStrictValidation(Carbonize.CHARRING_WOOD);
+        this.excludeFromStrictValidation(CharcoalPitInit.CHARRING_WOOD);
     }
 }

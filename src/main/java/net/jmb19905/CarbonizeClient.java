@@ -2,8 +2,9 @@ package net.jmb19905;
 
 import net.fabricmc.api.ClientModInitializer;
 import net.fabricmc.fabric.api.client.model.loading.v1.ModelLoadingPlugin;
-import net.jmb19905.model.CharringWoodBlockModel;
+import net.jmb19905.charcoal_pit.block.CharringWoodBlockModel;
 import static net.jmb19905.Carbonize.*;
+import static net.jmb19905.charcoal_pit.CharcoalPitInit.CHARRING_WOOD_ID;
 
 public class CarbonizeClient implements ClientModInitializer {
 	@Override
