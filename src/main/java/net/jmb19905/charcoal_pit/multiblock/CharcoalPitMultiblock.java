@@ -18,6 +18,7 @@ import net.minecraft.server.world.ServerWorld;
 import net.minecraft.sound.SoundCategory;
 import net.minecraft.sound.SoundEvents;
 import net.minecraft.state.property.BooleanProperty;
+import net.minecraft.util.Identifier;
 import net.minecraft.util.Util;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.ChunkPos;
@@ -44,6 +45,7 @@ import static net.jmb19905.charcoal_pit.block.CharringWoodBlock.Stage.*;
  *
  */
 public class CharcoalPitMultiblock implements WrappedQueuer<CharcoalPitMultiblock> {
+    private static final Identifier AETHER = new Identifier("aether", "the_aether");
     public static final Map<Direction, BooleanProperty> DIRECTION_PROPERTIES = ConnectingBlock.FACING_PROPERTIES.entrySet().stream().filter(entry -> entry.getKey() != Direction.DOWN).collect(Util.toMap());
     public static final BlockState FIRE_STATE = Blocks.FIRE.getDefaultState();
     public static final int SINGLE_BURN_TIME = 200;
@@ -359,6 +361,7 @@ public class CharcoalPitMultiblock implements WrappedQueuer<CharcoalPitMultibloc
 
     private static ObjectHolder<List<BlockPos>> collect(ServerWorld world, BlockPos pos,
             ObjectHolder<List<BlockPos>> parsedPositions, List<BlockPos> checkedPositions, boolean checkExisting) {
+        if (world.getDimensionKey().getValue().equals(AETHER)) return parsedPositions.getValue(List::clear).lock();
         if (checkedPositions.contains(pos)) return parsedPositions;
         if (parsedPositions.isLocked()) return parsedPositions;
 
