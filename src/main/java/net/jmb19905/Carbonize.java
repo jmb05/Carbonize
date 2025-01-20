@@ -57,7 +57,7 @@ public class Carbonize implements ModInitializer {
 			.sounds(BlockSoundGroup.WOOD)
 			.burnable());
 	public static final Block CHARCOAL_STACK = new FlammableFallingStackBlock(FabricBlockSettings.copy(CHARCOAL_PLANKS).nonOpaque());
-	public static final Block CHARCOAL_STAIRS = new FlammableFallingStairsBlock(CHARCOAL_PLANKS.getDefaultState(), FabricBlockSettings.copy(CHARCOAL_PLANKS));
+	public static final Block CHARCOAL_STAIRS = new FlammableFallingStairsBlock(Blocks.OAK_PLANKS.getDefaultState(), FabricBlockSettings.copy(CHARCOAL_PLANKS));
 	public static final Block CHARCOAL_SLAB = new FlammableFallingSlabBlock(FabricBlockSettings.copy(CHARCOAL_PLANKS));
 	public static final Block CHARCOAL_FENCE = new FlammableFallingFenceBlock(FabricBlockSettings.copy(CHARCOAL_PLANKS));
 	public static final Block CHARCOAL_FENCE_GATE = new FlammableFallingFenceGateBlock(FabricBlockSettings.copy(CHARCOAL_PLANKS));
