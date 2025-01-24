@@ -1,6 +1,5 @@
 package net.jmb19905.mixin;
 
-import net.jmb19905.Carbonize;
 import net.jmb19905.charcoal_pit.multiblock.CharcoalPitManager;
 import net.minecraft.registry.RegistryKey;
 import net.minecraft.server.MinecraftServer;
@@ -27,7 +26,7 @@ public abstract class ServerWorldMixin {
 
     @Inject(method = "<init>", at = @At("TAIL"))
     private void carbonize$loadMultiBlock(MinecraftServer server, Executor workerExecutor, LevelStorage.Session session, ServerWorldProperties properties, RegistryKey worldKey, DimensionOptions dimensionOptions, WorldGenerationProgressListener worldGenerationProgressListener, boolean debugWorld, long seed, List spawners, boolean shouldTickTime, RandomSequencesState randomSequencesState, CallbackInfo ci) {
-        Carbonize.LOGGER.info("Loading charcoal pit data for '" + this + "'/" + ((ServerWorld)(Object)this).getRegistryKey().getValue());
+        //Carbonize.LOGGER.info("Loading charcoal pit data for '" + this + "'/" + ((ServerWorld)(Object)this).getRegistryKey().getValue());
         pitManager = CharcoalPitManager.get((ServerWorld) (Object) this);
     }
 
@@ -41,7 +40,7 @@ public abstract class ServerWorldMixin {
     @Inject(method = "saveLevel", at = @At("HEAD"))
     private void carbonize$saveMultiBlock(CallbackInfo ci) {
         if (pitManager != null) {
-            Carbonize.LOGGER.info("Saving charcoal pit data for '" + this + "'/" + ((ServerWorld)(Object)this).getRegistryKey().getValue());
+            //Carbonize.LOGGER.info("Saving charcoal pit data for '" + this + "'/" + ((ServerWorld)(Object)this).getRegistryKey().getValue());
             pitManager.markDirty();
         }
     }

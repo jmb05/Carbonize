@@ -37,14 +37,15 @@ public class CharcoalPitManager extends PersistentState implements WrappedQueuer
         this.taskManager = new TaskManager<>();
     }
 
-    @SuppressWarnings("SuspiciousListRemoveInLoop")
     public void tick() {
+        executeQueue(this);
         for (int i = 0; i < storage.size(); i++) {
             var data = storage.get(i);
             ifQueued(() -> data.queue());
-            executeQueue(this);
             if (data.canTick()) data.tick();
-            if (data.isInvalidated()) storage.remove(i);
+            if (data.isInvalidated()) {
+                queue(() -> storage.remove(data));
+            }
         }
     }
 
