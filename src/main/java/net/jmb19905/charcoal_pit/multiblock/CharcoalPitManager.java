@@ -2,9 +2,9 @@ package net.jmb19905.charcoal_pit.multiblock;
 
 import net.jmb19905.Carbonize;
 import net.jmb19905.util.BlockPosWrapper;
-import net.jmb19905.util.queue.Queuer;
-import net.jmb19905.util.queue.TaskManager;
-import net.jmb19905.util.queue.WrappedQueuer;
+import net.jmb19905.util.worker.ConcurrentWorker;
+import net.jmb19905.util.worker.QueueableWorker;
+import net.jmb19905.util.worker.WrappedQueueableWorker;
 import net.minecraft.nbt.NbtCompound;
 import net.minecraft.server.world.ServerWorld;
 import net.minecraft.util.Identifier;
@@ -13,6 +13,7 @@ import net.minecraft.world.PersistentState;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.function.BooleanSupplier;
 import java.util.function.Function;
 
 /**
@@ -20,33 +21,44 @@ import java.util.function.Function;
  *  is stored inside the multi-blocks themselves, this manager will just access it for you. The reasoning behind this structuring is to make everything more
  *  readable.
  */
-public class CharcoalPitManager extends PersistentState implements WrappedQueuer<CharcoalPitManager> {
+public class CharcoalPitManager extends PersistentState implements WrappedQueueableWorker<CharcoalPitManager> {
     public static final Identifier CHARCOAL_PIT_ID = new Identifier(Carbonize.MOD_ID, "charcoal_pit_data");
 
     protected final ServerWorld world;
     private final List<CharcoalPitMultiblock> storage;
-    private final TaskManager<CharcoalPitManager> taskManager;
+    private final ConcurrentWorker<CharcoalPitManager> worker;
 
+    /**
+     * This manager is automatically made and ticked by the ServerWorld. There is no need to manually create one.
+     */
     public CharcoalPitManager(ServerWorld world) {
         this(world, new ArrayList<>());
     }
 
+    /**
+     * This manager is automatically made and handle by the ServerWorld. There is no need to manually create one.
+     */
     public CharcoalPitManager(ServerWorld world, List<CharcoalPitMultiblock> list) {
         this.world = world;
         this.storage = list;
-        this.taskManager = new TaskManager<>();
+        this.worker = new ConcurrentWorker<>();
     }
 
+    /**
+     * Prescribed directly from {@link ServerWorld#tick(BooleanSupplier)}. Always
+     * wrap any modifications (like deleting multiblocks) using {@link QueueableWorker}. If
+     * it's not done, CME's will occur. The reason for this is a multiblock might need to
+     * delete itself if merged with a neighbouring one. Since it occurs within the iteration,
+     * it requires scheduling to occur the next tick. This is fairly similar to how Minecraft
+     * handles it as well.
+     */
     public void tick() {
-        executeQueue(this);
-        for (int i = 0; i < storage.size(); i++) {
-            var data = storage.get(i);
-            ifQueued(() -> data.queue());
-            if (data.canTick()) data.tick();
-            if (data.isInvalidated()) {
+        tryExecute(this, () -> storage.forEach(QueueableWorker::queue));
+        storage.forEach(data -> {
+            if (data.isInvalidated())
                 queue(() -> storage.remove(data));
-            }
-        }
+            if (data.canTick()) data.tick();
+        });
     }
 
     public void add(Function<CharcoalPitManager, CharcoalPitMultiblock> getter) {
@@ -57,7 +69,8 @@ public class CharcoalPitManager extends PersistentState implements WrappedQueuer
 
     public void add(CharcoalPitMultiblock multiblock) {
         if (!exists(multiblock))
-            storage.add(multiblock);
+            queue(() -> storage.add(multiblock));
+
     }
 
     public CharcoalPitMultiblock get(BlockPos pos) {
@@ -88,6 +101,11 @@ public class CharcoalPitManager extends PersistentState implements WrappedQueuer
     }
 
     @Override
+    public QueueableWorker<CharcoalPitManager> getWorker() {
+        return worker;
+    }
+
+    @Override
     public NbtCompound writeNbt(NbtCompound nbt) {
         nbt.putInt("Size", storage.size());
         for (int index = 0; index < storage.size(); index++) {
@@ -111,11 +129,6 @@ public class CharcoalPitManager extends PersistentState implements WrappedQueuer
         return nbt;
     }
 
-    @Override
-    public Queuer<CharcoalPitManager> getQueuer() {
-        return taskManager;
-    }
-
     private static CharcoalPitManager createFromNbt(NbtCompound nbt, ServerWorld world) {
         var size = nbt.getInt("Size");
         CharcoalPitManager data = new CharcoalPitManager(world, new ArrayList<>(size));
@@ -135,9 +148,8 @@ public class CharcoalPitManager extends PersistentState implements WrappedQueuer
         return data;
     }
     public static CharcoalPitManager get(ServerWorld world) {
-        CharcoalPitManager data = world.getPersistentStateManager().getOrCreate(nbt -> createFromNbt(nbt, world), () -> new CharcoalPitManager(world), CHARCOAL_PIT_ID.toString());
-        data.markDirty();
-        return data;
+        //data.markDirty();
+        return world.getPersistentStateManager().getOrCreate(nbt -> createFromNbt(nbt, world), () -> new CharcoalPitManager(world), CHARCOAL_PIT_ID.toString());
     }
 
     private static String withIndex(String string, int index) {

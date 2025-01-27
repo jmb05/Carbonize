@@ -6,9 +6,9 @@ import net.jmb19905.charcoal_pit.block.CharringWoodBlockEntity;
 import net.jmb19905.util.BlockHelper;
 import net.jmb19905.util.BlockPosWrapper;
 import net.jmb19905.util.ObjectHolder;
-import net.jmb19905.util.queue.Queuer;
-import net.jmb19905.util.queue.TaskManager;
-import net.jmb19905.util.queue.WrappedQueuer;
+import net.jmb19905.util.worker.QueueableWorker;
+import net.jmb19905.util.worker.ConcurrentWorker;
+import net.jmb19905.util.worker.WrappedQueueableWorker;
 import net.minecraft.block.BlockState;
 import net.minecraft.block.Blocks;
 import net.minecraft.block.ConnectingBlock;
@@ -39,19 +39,19 @@ import static net.jmb19905.charcoal_pit.block.CharringWoodBlock.Stage.*;
 /**
  * This class is practically just a giant block entity. So just treat it as one. {@link  CharcoalPitManager} will handle everything else.
  * Every {@link CharringWoodBlockEntity} must always try to upload its data to here for everything to work properly. This multi-block
- * must be the only one to either execute a task directly or delegate it to its block entities.
+ * must be the only one to either tryExecute a task directly or delegate it to its block entities.
  *
  * <p></p> NOTE: The world is accessed via the handler.
  *
  */
-public class CharcoalPitMultiblock implements WrappedQueuer<CharcoalPitMultiblock> {
+public class CharcoalPitMultiblock implements WrappedQueueableWorker<CharcoalPitMultiblock> {
     private static final Identifier AETHER = new Identifier("aether", "the_aether");
     public static final Map<Direction, BooleanProperty> DIRECTION_PROPERTIES = ConnectingBlock.FACING_PROPERTIES.entrySet().stream().filter(entry -> entry.getKey() != Direction.DOWN).collect(Util.toMap());
     public static final BlockState FIRE_STATE = Blocks.FIRE.getDefaultState();
     public static final int SINGLE_BURN_TIME = 200;
 
+    private final ConcurrentWorker<CharcoalPitMultiblock> worker;
     private final CharcoalPitManager pitManager;
-    private final TaskManager<CharcoalPitMultiblock> taskManager;
     private final List<BlockPosWrapper> blockPositions;
     private final List<ChunkPos> chunkPositions;
     private int maxBurnTime;
@@ -61,7 +61,7 @@ public class CharcoalPitMultiblock implements WrappedQueuer<CharcoalPitMultibloc
     public CharcoalPitMultiblock(@Nullable CharcoalPitManager charcoalPitManager, List<BlockPos> blockPositions,
                                  int maxBurnTime, int burnTime, boolean extinguished) {
         this.pitManager = charcoalPitManager;
-        this.taskManager = new TaskManager<>();
+        this.worker = new ConcurrentWorker<>();
         this.blockPositions = new LinkedList<>(blockPositions.stream().map(BlockPosWrapper::new).toList());
         this.chunkPositions = new LinkedList<>();
         this.maxBurnTime = maxBurnTime;
@@ -78,16 +78,14 @@ public class CharcoalPitMultiblock implements WrappedQueuer<CharcoalPitMultibloc
     }
 
     /**
-     * Ticks are managed supplied by {@link CharcoalPitManager}. It works in conjunction with {@link Queuer} to manage synchronise
-     * everything to execute here. Theoretically from here, multi-threading support could be added with a couple changes. Just as long
-     * as world modifications are queued properly.
+     * Ticks are managed prescribed by {@link CharcoalPitManager#tick()}. This is where {@link QueueableWorker} executes queued tasks.
      */
     public void tick() {
         burnTime++;
 
         testSides();
 
-        executeQueue(this);
+        tryExecute(this);
 
         if (burnTime == maxBurnTime / 6)
             update();
@@ -191,8 +189,8 @@ public class CharcoalPitMultiblock implements WrappedQueuer<CharcoalPitMultibloc
     }
 
     @Override
-    public Queuer<CharcoalPitMultiblock> getQueuer() {
-        return taskManager;
+    public QueueableWorker<CharcoalPitMultiblock> getWorker() {
+        return worker;
     }
 
     @Override

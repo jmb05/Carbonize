@@ -7,9 +7,9 @@ import net.jmb19905.charcoal_pit.multiblock.CharcoalPitManager;
 import net.jmb19905.charcoal_pit.multiblock.CharcoalPitMultiblock;
 import net.jmb19905.recipe.BurnRecipe;
 import net.jmb19905.util.BlockHelper;
-import net.jmb19905.util.queue.Queuer;
-import net.jmb19905.util.queue.TaskManager;
-import net.jmb19905.util.queue.WrappedQueuer;
+import net.jmb19905.util.worker.ConcurrentWorker;
+import net.jmb19905.util.worker.QueueableWorker;
+import net.jmb19905.util.worker.WrappedQueueableWorker;
 import net.minecraft.block.Block;
 import net.minecraft.block.BlockState;
 import net.minecraft.block.Blocks;
@@ -34,9 +34,9 @@ import static net.jmb19905.charcoal_pit.block.CharringWoodBlock.STAGE;
  * this class does it get individually specific things like searching the recipe manager for its burn time and mimic model.
  * Everything else is handled by the multi-block and any tasks will be delegated from it.
  */
-public class CharringWoodBlockEntity extends BlockEntity implements RenderDataBlockEntity, WrappedQueuer<CharringWoodBlockEntity> {
+public class CharringWoodBlockEntity extends BlockEntity implements RenderDataBlockEntity, WrappedQueueableWorker<CharringWoodBlockEntity> {
     private static final CharcoalPitMultiblock DUMMY_DATA = CharcoalPitMultiblock.def();
-    private final TaskManager<CharringWoodBlockEntity> taskManager;
+    private final ConcurrentWorker<CharringWoodBlockEntity> worker;
     private List<BurnRecipe> recipeCache;
     private CharcoalPitManager managerCache;
     private CharcoalPitMultiblock dataCache;
@@ -46,7 +46,7 @@ public class CharringWoodBlockEntity extends BlockEntity implements RenderDataBl
 
     public CharringWoodBlockEntity(BlockPos pos, BlockState state) {
         super(CharcoalPitInit.CHARRING_WOOD_TYPE, pos, state);
-        this.taskManager = new TaskManager<>();
+        this.worker = new ConcurrentWorker<>();
         this.recipeCache = null;
         this.managerCache = null;
         this.dataCache = null;
@@ -58,7 +58,7 @@ public class CharringWoodBlockEntity extends BlockEntity implements RenderDataBl
 
     public void tick(World world, BlockPos pos, BlockState ignoredState) {
         if (!world.isClient) {
-            this.executeQueue(this);
+            worker.tryExecute(this);
 
             if (this.dataCache == null)
                 if (this.getCharcoalPitData().exists(pos))
@@ -144,7 +144,7 @@ public class CharringWoodBlockEntity extends BlockEntity implements RenderDataBl
         if (world != null) {
             if (world instanceof ServerWorld serverWorld) {
                 serverWorld.getChunkManager().markForUpdate(pos);
-                getCharcoalPitData().queue();
+                //getCharcoalPitData().queue();
             }
             this.markDirty();
             this.world.updateListeners(pos, this.getCachedState(), this.getCachedState(), Block.NOTIFY_ALL);
@@ -155,10 +155,9 @@ public class CharringWoodBlockEntity extends BlockEntity implements RenderDataBl
         return dataCache == null ? DUMMY_DATA : dataCache;
     }
 
-
     @Override
-    public Queuer<CharringWoodBlockEntity> getQueuer() {
-        return taskManager;
+    public QueueableWorker<CharringWoodBlockEntity> getWorker() {
+        return worker;
     }
 
     @Nullable
