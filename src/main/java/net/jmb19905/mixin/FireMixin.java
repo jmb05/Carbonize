@@ -3,10 +3,13 @@ package net.jmb19905.mixin;
 import net.jmb19905.Carbonize;
 import net.jmb19905.block.AshBlock;
 import net.jmb19905.recipe.BurnRecipe;
-import net.minecraft.block.*;
+import net.jmb19905.util.BlockHelper;
+import net.minecraft.block.Block;
+import net.minecraft.block.BlockState;
+import net.minecraft.block.FireBlock;
+import net.minecraft.block.TntBlock;
 import net.minecraft.registry.tag.BiomeTags;
 import net.minecraft.server.world.ServerWorld;
-import net.minecraft.state.property.Properties;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Direction;
 import net.minecraft.util.math.MathHelper;
@@ -74,12 +77,7 @@ public abstract class FireMixin {
                     float exposure = getExposed(world, pos);
                     float randomVal = random.nextFloat();
                     if (randomVal > exposure) {
-                        var newState = burnRecipe.result().getDefaultState();
-                        if (state.contains(Properties.AXIS)) {
-                            var rotation = state.get(Properties.AXIS);
-                            newState = newState.with(Properties.AXIS, rotation);
-                        }
-                        world.setBlockState(pos, newState);
+                        world.setBlockState(pos, BlockHelper.transferState(burnRecipe.result().getDefaultState(), state));
                         return true;
                     } else if (randomVal > 0.3f && Carbonize.CONFIG.createAsh()) {
                         world.setBlockState(pos, Carbonize.ASH_LAYER.getDefaultState().with(AshBlock.LAYERS, getAshLayerCount(random, state)));

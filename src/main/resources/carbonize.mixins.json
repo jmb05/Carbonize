@@ -4,7 +4,10 @@
   "compatibilityLevel": "JAVA_17",
   "mixins": [
     "FallingBlockEntityMixin",
+    "FenceMixin",
     "FireMixin",
+    "IFireAccess",
+    "ServerWorldMixin",
     "StairsBlockMixin"
   ],
   "injectors": {

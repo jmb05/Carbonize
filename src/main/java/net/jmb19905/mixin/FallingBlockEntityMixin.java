@@ -41,7 +41,7 @@ public abstract class FallingBlockEntityMixin extends Entity {
     public void setOnFire(boolean onFire) {
         this.dataTracker.set(ON_FIRE, onFire);
         super.setOnFire(onFire);
-        LOGGER.info("Set on fire: " + onFire);
+        LOGGER.debug("Set on fire: " + onFire);
     }
 
     public boolean isOnFire() {
