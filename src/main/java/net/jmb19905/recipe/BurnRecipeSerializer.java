@@ -3,6 +3,8 @@ package net.jmb19905.recipe;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonSyntaxException;
 import net.jmb19905.Carbonize;
+import net.jmb19905.charcoal_pit.CharcoalPitInit;
+import net.jmb19905.charcoal_pit.multiblock.CharcoalPitMultiblock;
 import net.minecraft.block.Block;
 import net.minecraft.network.PacketByteBuf;
 import net.minecraft.recipe.RecipeSerializer;
@@ -18,26 +20,43 @@ public class BurnRecipeSerializer implements RecipeSerializer<BurnRecipe> {
 
     @Override
     public BurnRecipe read(Identifier id, JsonObject json) {
-        String tagString = json.get("input").getAsString();
-        String blockString = json.get("output").getAsString();
-        TagKey<Block> tag = TagKey.of(RegistryKeys.BLOCK, new Identifier(tagString));
-        Block block = Registries.BLOCK.getOrEmpty(new Identifier(blockString))
-                .orElseThrow(() -> new JsonSyntaxException("No such Block: " + blockString));
-        return new BurnRecipe(id, tag, block);
+        String rawBurnTime = json.has("burnTime") ? json.get("burnTime").getAsString() : null;
+        String rawInput = json.get("input").getAsString();
+        String rawMedium = json.has("medium") ? json.get("medium").getAsString() : null;
+        String rawOutput = json.get("output").getAsString();
+
+        int burnTime = rawBurnTime != null ? Integer.parseInt(rawBurnTime) : CharcoalPitMultiblock.SINGLE_BURN_TIME;
+        TagKey<Block> input = TagKey.of(RegistryKeys.BLOCK, new Identifier(rawInput));
+        Block medium = rawMedium != null ? findBlock(rawMedium): CharcoalPitInit.CHARRING_WOOD;
+        Block output = findBlock(rawOutput);
+
+        return new BurnRecipe(id, burnTime, input, medium, output);
     }
 
     @Override
     public BurnRecipe read(Identifier id, PacketByteBuf buf) {
-        Identifier tagId = buf.readIdentifier();
-        Identifier blockId = buf.readIdentifier();
-        TagKey<Block> tag = TagKey.of(RegistryKeys.BLOCK, tagId);
-        Block block = Registries.BLOCK.get(blockId);
-        return new BurnRecipe(id, tag, block);
+        int burnTime = buf.readInt();
+        Identifier idInput = buf.readIdentifier();
+        Identifier idMedium = buf.readIdentifier();
+        Identifier idOutput = buf.readIdentifier();
+
+        TagKey<Block> input = TagKey.of(RegistryKeys.BLOCK, idInput);
+        Block medium = Registries.BLOCK.get(idOutput);
+        Block output = Registries.BLOCK.get(idMedium);
+
+        return new BurnRecipe(id, burnTime, input, medium, output);
     }
 
     @Override
     public void write(PacketByteBuf buf, BurnRecipe recipe) {
+        buf.writeInt(recipe.burnTime());
         buf.writeIdentifier(recipe.input().id());
+        buf.writeIdentifier(Registries.BLOCK.getId(recipe.medium()));
         buf.writeIdentifier(Registries.BLOCK.getId(recipe.result()));
+    }
+
+    private static Block findBlock(String identifier) {
+        return identifier == null ? null :
+                Registries.BLOCK.getOrEmpty(new Identifier(identifier)).orElseThrow(() -> new JsonSyntaxException("No such Block: " + identifier));
     }
 }
